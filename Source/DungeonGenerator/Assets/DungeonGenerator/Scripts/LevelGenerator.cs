@@ -46,7 +46,7 @@ namespace DungeonGenerator
 
 
             //If we have reached here, We can begin generating rooms and append them to a parent object
-            GameObject NewLevel = GameObject.Instantiate(new GameObject(), this.transform);
+            GameObject NewLevel = GameObject.Instantiate( gameObject, this.transform);
             NewLevel.name = "GeneratedRoom" + System.DateTime.Now;
 
             List<Room> RoomsToSpawn = new List<Room>();
@@ -63,8 +63,9 @@ namespace DungeonGenerator
 
             for (int i = 0; i < RoomsToSpawn.Count; i++)
             {
-                GameObject room = Instantiate(new GameObject(), NewLevel.transform);
-                room.name = $"Room : {i}";
+               
+                GameObject room = Instantiate(RoomsToSpawn[i].GetInteriorForRoom().gameObject, NewLevel.transform);
+                room.name = "Room : " + i;
 
                 Vector2 boundsSize = WallObject.GetComponent<SpriteRenderer>().bounds.size;
 
@@ -72,8 +73,10 @@ namespace DungeonGenerator
                 for (int x = 0; x < RoomsToSpawn[i].width; x++)
                 {
                         GameObject tile = GameObject.Instantiate(WallObject, new Vector3(
-                            (boundsSize.x * x) -
-                            (boundsSize.x / 2), boundsSize.y /2, 0) , Quaternion.identity, room.transform);
+                            (boundsSize.x * x) - (boundsSize.x / 2),
+                            0,
+                            0) 
+                            , Quaternion.identity, room.transform);
                         tile.name = $" Room:{i} | Wall:{x},{0}";
                     
                 }
@@ -84,7 +87,9 @@ namespace DungeonGenerator
                       
                           GameObject tile = GameObject.Instantiate(WallObject, new Vector3(
                               (boundsSize.x * x) -
-                              (boundsSize.x / 2), RoomsToSpawn[i].height * boundsSize.y - boundsSize.y / 2, 0) , Quaternion.identity, room.transform);
+                              (boundsSize.x / 2),
+                              (RoomsToSpawn[i].height * boundsSize.y), 0) ,
+                              Quaternion.identity, room.transform);
                           tile.name = $" Room:{i} | Wall:{x},{RoomsToSpawn[i].height*  boundsSize.y}";
                       
                  }
@@ -92,22 +97,30 @@ namespace DungeonGenerator
                 //Right
                 for (int y = 0; y < RoomsToSpawn[i].height; y++)
                 {
-                    GameObject tile = GameObject.Instantiate(WallObject, new Vector3(boundsSize.x * RoomsToSpawn[i].width - boundsSize.x / 2,
-                        (boundsSize.y * y) - boundsSize.y / 2,0), Quaternion.identity, room.transform);
+                    GameObject tile = GameObject.Instantiate(WallObject, new Vector3(
+                        boundsSize.x * RoomsToSpawn[i].width - (boundsSize.x / 2),
+                        (boundsSize.y * y) ,
+                        0), 
+                        Quaternion.identity, room.transform);
 
                     tile.name = $" Room:{i} | Wall:{boundsSize.x * RoomsToSpawn[i].height},{y}";
 
                 }
+                //left
                 for (int y = 0; y < RoomsToSpawn[i].height; y++)
                 {
-                    GameObject tile = GameObject.Instantiate(WallObject, new Vector3(-boundsSize.x / 2,
-                        (boundsSize.y * y) - boundsSize.y / 2,0), Quaternion.identity, room.transform);
+                    GameObject tile = GameObject.Instantiate(WallObject, new Vector3(
+                        -boundsSize.x / 2,
+                        (boundsSize.y * y),
+                        0), Quaternion.identity, room.transform);
 
                     tile.name = $" Room:{i} | Wall:{0},{y}";
 
                 }
 
             }
+
+
         }
     }
 

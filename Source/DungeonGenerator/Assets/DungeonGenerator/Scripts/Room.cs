@@ -28,6 +28,30 @@ namespace DungeonGenerator
             yTileBounds = (int)WallSprite.rect.height;
             xTileBounds = (int)WallSprite.rect.width;
         }
+
+       public Interior GetInteriorForRoom()
+        {
+            float total = 0;
+            for (int i = 0; i < Interior.Length; i++)
+            {
+                total += Interior[i]._weight;
+            }
+
+            float Target = Random.Range(0, total);
+
+            float currentCount = 0;
+
+            for (int i = 0; i < Interior.Length; i++)
+            {
+                currentCount += Interior[i]._weight;
+                if (currentCount >= Target)
+                {
+                    return Interior[i]._interiorGameObject;
+                }
+            }
+
+            return null;
+        }
     }
 
     #region Utility
