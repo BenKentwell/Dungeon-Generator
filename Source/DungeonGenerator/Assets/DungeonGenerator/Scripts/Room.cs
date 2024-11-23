@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -11,7 +12,12 @@ namespace DungeonGenerator
     public class Room : ScriptableObject
     {
 
-        [SerializeField] public int xTileBounds, yTileBounds;
+        private GUID _guid;
+
+        
+        [SerializeField, Tooltip("Pixel size of each tile")] public int xTileBounds, yTileBounds;
+
+        [SerializeField, Tooltip("Amount of tiles in room")] public int width, height;
         public Sprite WallSprite;
 
         public RoomInteriorPreset<Interior, float>[] Interior;
