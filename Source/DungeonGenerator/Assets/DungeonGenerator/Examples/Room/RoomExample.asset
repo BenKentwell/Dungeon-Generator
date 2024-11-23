@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9926f5a093cc2b14fae7bdabbf868ec7, type: 3}
   m_Name: RoomExample
   m_EditorClassIdentifier: 
-  xTileBounds: 320
-  yTileBounds: 320
-  WallSprite: {fileID: 21300000, guid: 43e719d0896274649866cdcfe5bec28d, type: 3}
-  Interior: []
+  xTileBounds: 32
+  yTileBounds: 32
+  WallSprite: {fileID: 21300000, guid: 39b1c6c9b63b35f4987ffb65f5c7c31e, type: 3}
+  Interior:
+  - _interiorGameObject: {fileID: 122309522969152571, guid: ed7606dd577ca7a4e9fe3325e6b2652c, type: 3}
+    _weight: 1
   assignSize: 0
