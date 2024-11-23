@@ -1,9 +1,11 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Quaternion = UnityEngine.Quaternion;
+using Random = UnityEngine.Random;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 
@@ -32,6 +34,8 @@ namespace DungeonGenerator
         /// </summary>
         void Generate()
         {
+
+            
             List<Room> roomsRequiredToSpawn = new List<Room>();
 
             for (int i = 0; i < Rooms.Length; i++)
@@ -63,9 +67,10 @@ namespace DungeonGenerator
 
             for (int i = 0; i < RoomsToSpawn.Count; i++)
             {
-               
+                
                 GameObject room = Instantiate(RoomsToSpawn[i].GetInteriorForRoom().gameObject, NewLevel.transform);
                 room.name = "Room : " + i;
+                
 
                 Vector2 boundsSize = WallObject.GetComponent<SpriteRenderer>().bounds.size;
 
@@ -90,7 +95,7 @@ namespace DungeonGenerator
                               (boundsSize.x / 2),
                               (RoomsToSpawn[i].height * boundsSize.y), 0) ,
                               Quaternion.identity, room.transform);
-                          tile.name = $" Room:{i} | Wall:{x},{RoomsToSpawn[i].height*  boundsSize.y}";
+                          tile.name = $" Room:{i} | Wall:{x},{RoomsToSpawn[i].height}";
                       
                  }
 
@@ -103,7 +108,7 @@ namespace DungeonGenerator
                         0), 
                         Quaternion.identity, room.transform);
 
-                    tile.name = $" Room:{i} | Wall:{boundsSize.x * RoomsToSpawn[i].height},{y}";
+                    tile.name = $" Room:{i} | Wall:{RoomsToSpawn[i].width},{y}";
 
                 }
                 //left
@@ -119,6 +124,9 @@ namespace DungeonGenerator
                 }
 
             }
+
+            //Disperse rooms in a random order. With propencities for veritcality or horizontal. 
+
 
 
         }
