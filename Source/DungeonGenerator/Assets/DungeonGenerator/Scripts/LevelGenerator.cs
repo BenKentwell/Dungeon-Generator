@@ -17,6 +17,7 @@ namespace DungeonGenerator
     public class LevelGenerator : MonoBehaviour
     {
 
+       
         [Header("Dungeon Generation")]
         [SerializeField, Tooltip("The total amnount of rooms to spawn.")]
         public int AmountOfRooms;
@@ -37,9 +38,9 @@ namespace DungeonGenerator
             List<RoomCollider<Room, BoxCollider2D>>();
 
         //Allows room generation to be called in editor
-        [EditorButton("Generate")] public bool StartGenerating;
+        [EditorButton("Generate", ButtonWidth = 200)] public bool StartGenerating;
 
-
+      
         
         /// <summary>
         /// This function is the bread and butter of the alogorithm.
@@ -47,10 +48,15 @@ namespace DungeonGenerator
         /// </summary>
         void Generate()
         {
-            tiles = new GameObject[MaximumLevelSize[0], MaximumLevelSize[1]];
-            
+            tiles = new GameObject[MaximumLevelSize[0],MaximumLevelSize[1]];
 
-         List<RoomPropensities<Room, int>> RoomsCopy = new List<RoomPropensities<Room, int>>();
+            //Get location of tile 0,0, then send postions through get location function. 
+
+            Vector2 tilePos00 = transform.position;
+            Vector2 tileSize = WallObject.GetComponent<SpriteRenderer>().size;
+
+
+            List<RoomPropensities<Room, int>> RoomsCopy = new List<RoomPropensities<Room, int>>();
         
 
             List<Room> roomsRequiredToSpawn = new List<Room>();
@@ -199,9 +205,13 @@ namespace DungeonGenerator
                     }
                 }
 
+
+
                 roomColliders.Add(roomColPair);
             }
         }
+
+     
 
         private void MoveRoom(GameObject _room, Vector2 _averageLocationOfRooms = new Vector2())
         {
@@ -225,6 +235,15 @@ namespace DungeonGenerator
                 list[k] = list[n];
                 list[n] = value;
             }
+        }
+
+        /// <summary>
+        /// Finds the location of a tiles placment in the grid. 
+        /// tileOriginShould alwats be 0,0. But pass it it to be save
+        /// </summary>
+        private Vector2 GetTileLocation(int _xTile, int yTile, Vector2 tileSize, Vector2 tileOrigin = new Vector2() )
+        {
+            return Vector2.zero;
         }
 
     }
