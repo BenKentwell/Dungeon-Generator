@@ -25,6 +25,7 @@ namespace DungeonGenerator
         
         [SerializeField, Tooltip("An Array of prefab rooms.")]
         public RoomPropensities<Room, int>[] Rooms;
+        
 
         [Header("Tile Presets")] [SerializeField, Tooltip("Default Wall object.")]
         private GameObject WallObject;
@@ -41,7 +42,8 @@ namespace DungeonGenerator
         /// </summary>
         void Generate()
         {
-
+         List<RoomPropensities<Room, int>> RoomsCopy = new List<RoomPropensities<Room, int>>();
+        
 
             List<Room> roomsRequiredToSpawn = new List<Room>();
 
@@ -50,6 +52,12 @@ namespace DungeonGenerator
                 for (int j = 0; j < Rooms[i]._AmountRequiredToSpawn; j++)
                 {
                     roomsRequiredToSpawn.Add(Rooms[i]._Room);
+                    
+                }
+
+                if (Rooms[i]._AmountRequiredToSpawn <= 0)
+                {
+                    RoomsCopy.Add(Rooms[i]);
                 }
             }
 
@@ -63,17 +71,20 @@ namespace DungeonGenerator
             GameObject NewLevel = new GameObject("GeneratedRoom" + System.DateTime.Now);
             NewLevel.transform.parent = transform;
             List<Room> RoomsToSpawn = new List<Room>();
-            for (int i = 0; i < roomsRequiredToSpawn.Count; i++)
+            int roomsrequired = roomsRequiredToSpawn.Count;
+            for (int i = 0; i < roomsrequired; i++)
             {
                 RoomsToSpawn.Add(roomsRequiredToSpawn[i]);
             }
 
-            for (int i = 0; i < AmountOfRooms - roomsRequiredToSpawn.Count; i++)
+            roomsRequiredToSpawn.Clear();
+            for (int i = 0; i < AmountOfRooms - roomsrequired; i++)
             {
-                int rand = Random.Range(0, Rooms.Length - 1);
-                RoomsToSpawn.Add(Rooms[rand]._Room);
+                int rand = Random.Range(0, RoomsCopy.Count);
+                RoomsToSpawn.Add(RoomsCopy[rand]._Room);
             }
 
+            Shuffle(RoomsToSpawn);
             //Create rooms, interiors and allocate colliders to each rooms bounds;
 
             roomColliders = new
@@ -89,7 +100,7 @@ namespace DungeonGenerator
                 string roomID = "" + (i + 1);
 
                 GameObject room = Instantiate(RoomsToSpawn[i].GetInteriorForRoom().gameObject, NewLevel.transform);
-                room.name = "Room : " + roomID;
+                room.name = "Room : " + roomID +  " {" +  RoomsToSpawn[i].name + "}";
 
 
                 Vector2 boundsSize = WallObject.GetComponent<SpriteRenderer>().bounds.size;
@@ -221,9 +232,20 @@ namespace DungeonGenerator
             _room.transform.position = new Vector3(Random.Range(xx, xy),Random.Range(yx,yy), 0);
         }
 
-        
-       
 
+
+        public static void Shuffle<T>( List<T> list)
+        {
+            int n = list.Count;
+            while (n > 1)
+            {
+                n--;
+                int k = Random.Range(0, n + 1);
+                T value = list[k];
+                list[k] = list[n];
+                list[n] = value;
+            }
+        }
 
     }
 
@@ -262,6 +284,8 @@ namespace DungeonGenerator
         public Room _Room;
         public BoxCollider2D _Collider2D;
     }
+
+
 
     #endregion
 
