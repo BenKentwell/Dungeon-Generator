@@ -1,11 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Assertions;
-using Rect =  DungeonGenerator.EditorCollision.Rect ;
+using Rect = DungeonGenerator.EditorCollision.Rect;
 using Quaternion = UnityEngine.Quaternion;
 using Random = UnityEngine.Random;
 using Vector2 = UnityEngine.Vector2;
@@ -16,20 +17,18 @@ namespace DungeonGenerator
     [AddComponentMenu("DungeonGenerator/LevelGenerator")]
     public class LevelGenerator : MonoBehaviour
     {
+        [Header("Dungeon Generation")] [SerializeField, Tooltip("The total amount of rooms to spawn.")]
+        private int AmountOfRooms;
 
-       
-        [Header("Dungeon Generation")]
-        [SerializeField, Tooltip("The total amnount of rooms to spawn.")]
-        public int AmountOfRooms;
-
-        [SerializeField, Tooltip("Maximum bounds of the level. All rooms will be spawned within this size. Size is in tiles. ")]
+        [SerializeField
+         , Tooltip("Maximum bounds of the level. All rooms will be spawned within this size. Size is in tiles. ")]
         private int[] MaximumLevelSize = new int[2];
-        
+
         [SerializeField, Tooltip("An Array of prefab rooms.")]
-        public RoomPropensities<Room, int>[] Rooms;
+        private RoomPropensities<Room, int>[] Rooms;
 
         private GameObject[,] tiles = null;
-        
+
 
         [Header("Tile Presets")] [SerializeField, Tooltip("Default Wall object.")]
         private GameObject WallObject;
@@ -38,17 +37,17 @@ namespace DungeonGenerator
             List<RoomCollider<Room, BoxCollider2D>>();
 
         //Allows room generation to be called in editor
-        [EditorButton("Generate", ButtonWidth = 200)] public bool StartGenerating;
+        [EditorButton("Generate", ButtonWidth = 200)]
+        public bool StartGenerating;
 
-      
-        
+
         /// <summary>
         /// This function is the bread and butter of the alogorithm.
         /// Praise be the lords of platformers
         /// </summary>
         void Generate()
         {
-            tiles = new GameObject[MaximumLevelSize[0],MaximumLevelSize[1]];
+            tiles = new GameObject[MaximumLevelSize[0], MaximumLevelSize[1]];
 
             //Get location of tile 0,0, then send postions through get location function. 
 
@@ -57,7 +56,7 @@ namespace DungeonGenerator
 
 
             List<RoomPropensities<Room, int>> RoomsCopy = new List<RoomPropensities<Room, int>>();
-        
+
 
             List<Room> roomsRequiredToSpawn = new List<Room>();
 
@@ -66,7 +65,6 @@ namespace DungeonGenerator
                 for (int j = 0; j < Rooms[i]._AmountRequiredToSpawn; j++)
                 {
                     roomsRequiredToSpawn.Add(Rooms[i]._Room);
-                    
                 }
 
                 if (Rooms[i]._AmountRequiredToSpawn <= 0)
@@ -113,83 +111,25 @@ namespace DungeonGenerator
                 string roomID = "" + (i + 1);
 
                 GameObject room = Instantiate(RoomsToSpawn[i].GetInteriorForRoom().gameObject, NewLevel.transform);
-                room.name = "Room : " + roomID +  " {" +  RoomsToSpawn[i].name + "}";
-                
+                room.name = "Room : " + roomID + " {" + RoomsToSpawn[i].name + "}";
+
                 Vector2 boundsSize = WallObject.GetComponent<SpriteRenderer>().bounds.size;
 
                 GameObject wallsGameObject = new GameObject("Room" + roomID + "Walls");
-                wallsGameObject.transform.parent = room.transform;
-
-                //I probably need to do this after i find a position in the grid. 
-                //If it stays here i will need to assign all the tiles to new spots on the grid
-                //and that sucks
-
-                //TODO Move the wall generation to after finding a room location that does not conflict with other rooms. 
-                //Top
-                for (int x = 0; x < RoomsToSpawn[i].width; x++)
-                {
-                    GameObject tile = GameObject.Instantiate(WallObject, new Vector3(
-                            (boundsSize.x * x) - (boundsSize.x / 2),
-                            0,
-                            0)
-                        , Quaternion.identity, wallsGameObject.transform);
-                    tile.name = $" Room:{roomID} | Wall:{x},{0}";
-
-                }
-
-                //Bottom
-                for (int x = 0; x < RoomsToSpawn[i].width; x++)
-                {
-
-                    GameObject tile = GameObject.Instantiate(WallObject, new Vector3(
-                            (boundsSize.x * x) -
-                            (boundsSize.x / 2),
-                            (RoomsToSpawn[i].height * boundsSize.y), 0),
-                        Quaternion.identity, wallsGameObject.transform);
-                    tile.name = $" Room:{roomID} | Wall:{x},{RoomsToSpawn[i].height}";
-
-                }
-
-                //Right
-                for (int y = 0; y < RoomsToSpawn[i].height; y++)
-                {
-                    GameObject tile = GameObject.Instantiate(WallObject, new Vector3(
-                            boundsSize.x * RoomsToSpawn[i].width - (boundsSize.x / 2),
-                            (boundsSize.y * y),
-                            0),
-                        Quaternion.identity, wallsGameObject.transform);
-
-                    tile.name = $" Room:{roomID} | Wall:{RoomsToSpawn[i].width},{y}";
-
-                }
-
-                //left
-                for (int y = 0; y < RoomsToSpawn[i].height; y++)
-                {
-                    GameObject tile = GameObject.Instantiate(WallObject, new Vector3(
-                        -boundsSize.x / 2,
-                        (boundsSize.y * y),
-                        0), Quaternion.identity, wallsGameObject.transform);
-
-                    tile.name = $" Room:{roomID} | Wall:{0},{y}";
-
-                }
+                wallsGameObject.transform.SetParent(room.transform, true);
 
 
-
-                //TODO Move this above wall generation and assign the root to a tile. 
-                //Setting a root tile will allow the generator to assign walls into the grid. 
-
-                //Create bounds for each room. 
                 BoxCollider2D col = room.AddComponent<BoxCollider2D>();
                 col.offset = new Vector2(((boundsSize.x * RoomsToSpawn[i].width) / 2) - (boundsSize.x / 2),
                     (boundsSize.y * RoomsToSpawn[i].height) / 2);
                 col.size = new Vector2(boundsSize.x * RoomsToSpawn[i].width + boundsSize.x,
                     boundsSize.y * RoomsToSpawn[i].height + boundsSize.y);
+
                 RoomCollider<Room, BoxCollider2D> roomColPair =
                     new RoomCollider<Room, BoxCollider2D>(RoomsToSpawn[i], col);
-               
 
+                RoomData roomData = new RoomData(RoomsToSpawn[i].width, RoomsToSpawn[i].height, boundsSize
+                    , wallsGameObject.transform);
                 //find a spot within bounds    
                 for (int j = 0; j < roomColliders.Count; j++)
                 {
@@ -198,33 +138,41 @@ namespace DungeonGenerator
                         continue;
                     }
 
+
+                    int k = 0;
                     //while (roomColPair._Collider2D.IsTouching(roomColliders[j]._Collider2D))
-                   while (EditorCollision.EditorIsTouching(roomColPair._Collider2D, roomColliders[j]._Collider2D))
+                    while (EditorCollision.EditorIsTouching(roomColPair._Collider2D, roomColliders[j]._Collider2D))
                     {
-                        MoveRoom(roomColPair._Collider2D.gameObject, AverageLocationOfRooms);
+                        MoveRoom(room, AverageLocationOfRooms);
+                        k++;
+                        if (k > 100)
+                            break;
                     }
                 }
 
-
+                WallParent wallParent = wallsGameObject.AddComponent<WallParent>();
+                wallParent.Generate(roomData, WallObject);
 
                 roomColliders.Add(roomColPair);
             }
         }
 
-     
 
-        private void MoveRoom(GameObject _room, Vector2 _averageLocationOfRooms = new Vector2())
+        private void MoveRoom(GameObject _room, Vector2 _averageLocationOfRooms = default)
         {
-            int xx, xy,yx,yy;
+            int xx, xy, yx, yy;
             xx = -MaximumLevelSize[0] / 2;
             xy = MaximumLevelSize[0] / 2;
             yx = -MaximumLevelSize[1] / 2;
             yy = MaximumLevelSize[1] / 2;
-            _room.transform.position = new Vector3(Random.Range(xx, xy),Random.Range(yx,yy), 0);
+
+
+            _room.transform.position = new Vector3(Random.Range(xx, xy), Random.Range(yx, yy), 0);
         }
 
+        
 
-        public static void Shuffle<T>( List<T> list)
+        public static void Shuffle<T>(List<T> list)
         {
             int n = list.Count;
             while (n > 1)
@@ -241,27 +189,36 @@ namespace DungeonGenerator
         /// Finds the location of a tiles placment in the grid. 
         /// tileOriginShould alwats be 0,0. But pass it it to be save
         /// </summary>
-        private Vector2 GetTileLocation(int _xTile, int yTile, Vector2 tileSize, Vector2 tileOrigin = new Vector2() )
+        private int[,] GetTileLocation(Vector2 location, Vector2 tileSize, Vector2 tileOrigin = new Vector2())
         {
-            return Vector2.zero;
-        }
 
+            return null ;
+        }
     }
 
     #region Utility
+
+    public enum EWallDirection
+    {
+        Bottom = 0
+        , Top = 1
+        , Left = 2
+        , Right = 3
+    }
+
 
     //Utility
     [System.Serializable]
     public class RoomPropensities<TKey, TValue>
     {
-
-        public RoomPropensities() { }
+        public RoomPropensities()
+        {
+        }
 
         public RoomPropensities(Room _key, int _value)
         {
             _Room = _key;
             _AmountRequiredToSpawn = _value;
-
         }
 
         public Room _Room;
@@ -272,7 +229,9 @@ namespace DungeonGenerator
 
     public class RoomCollider<TKey, TValue>
     {
-        public RoomCollider(){ }
+        public RoomCollider()
+        {
+        }
 
         public RoomCollider(Room _key, BoxCollider2D Collider)
         {
@@ -285,8 +244,24 @@ namespace DungeonGenerator
     }
 
 
+    public struct RoomData
+    {
+        public int WallSizeX;
+        public int WallSizeY;
+        public Vector2 BoundSize;
+        public Transform ParentTransform;
+        public float TileOriginOnSprite;
+
+        public RoomData(int _wallSizeX, int _wallSizeY, Vector2 _boundsSize
+            , Transform _parentTransform, float _tileOriginOnSprite = 0.5f)
+        {
+            WallSizeX = _wallSizeX;
+            WallSizeY = _wallSizeY;
+            BoundSize = _boundsSize;
+            ParentTransform = _parentTransform;
+            TileOriginOnSprite = _tileOriginOnSprite;
+        }
+    }
 
     #endregion
-
 }
-
