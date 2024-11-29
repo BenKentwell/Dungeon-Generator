@@ -119,7 +119,7 @@ namespace DungeonGenerator
                 wallsGameObject.transform.SetParent(room.transform, true);
 
 
-                BoxCollider2D col = room.AddComponent<BoxCollider2D>();
+                BoxCollider2D col = room.GetComponent<BoxCollider2D>();
                 col.offset = new Vector2(((boundsSize.x * RoomsToSpawn[i].width) / 2) - (boundsSize.x / 2),
                     (boundsSize.y * RoomsToSpawn[i].height) / 2);
                 col.size = new Vector2(boundsSize.x * RoomsToSpawn[i].width + boundsSize.x,
@@ -143,7 +143,7 @@ namespace DungeonGenerator
                     //while (roomColPair._Collider2D.IsTouching(roomColliders[j]._Collider2D))
                     while (EditorCollision.EditorIsTouching(roomColPair._Collider2D, roomColliders[j]._Collider2D))
                     {
-                        MoveRoom(room, AverageLocationOfRooms);
+                        MoveRoom(room, boundsSize, AverageLocationOfRooms);
                         k++;
                         if (k > 100)
                             break;
@@ -158,7 +158,7 @@ namespace DungeonGenerator
         }
 
 
-        private void MoveRoom(GameObject _room, Vector2 _averageLocationOfRooms = default)
+        private void MoveRoom(GameObject _room, Vector2 _tileSize, Vector2 _averageLocationOfRooms = default)
         {
             int xx, xy, yx, yy;
             xx = -MaximumLevelSize[0] / 2;
@@ -166,11 +166,10 @@ namespace DungeonGenerator
             yx = -MaximumLevelSize[1] / 2;
             yy = MaximumLevelSize[1] / 2;
 
-
-            _room.transform.position = new Vector3(Random.Range(xx, xy), Random.Range(yx, yy), 0);
+            _room.transform.position
+                = GetTileLocation(new Vector3(Random.Range(xx, xy), Random.Range(yx, yy), 0), _tileSize);
         }
 
-        
 
         public static void Shuffle<T>(List<T> list)
         {
@@ -189,10 +188,15 @@ namespace DungeonGenerator
         /// Finds the location of a tiles placment in the grid. 
         /// tileOriginShould alwats be 0,0. But pass it it to be save
         /// </summary>
-        private int[,] GetTileLocation(Vector2 location, Vector2 tileSize, Vector2 tileOrigin = new Vector2())
+        private Vector2 GetTileLocation(Vector2 location, Vector2 tileSize, Vector2 tileOrigin = default)
         {
+            Vector2 ratio = location / tileSize;
+            int ratioX = (int)ratio.x;
+            int ratioY = (int)ratio.y;
 
-            return null ;
+            ratio.x = ratioX * tileSize.x;
+            ratio.y = ratioY * tileSize.y;
+            return ratio;
         }
     }
 
