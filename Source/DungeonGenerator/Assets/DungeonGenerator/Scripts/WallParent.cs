@@ -18,7 +18,6 @@ namespace DungeonGenerator
                 , _roomData.TileOriginOnSprite);
         }
 
-
         /// <summary>
         /// Generates a series of wall objects and assigns their locations in the level and the tileset
         /// </summary>
