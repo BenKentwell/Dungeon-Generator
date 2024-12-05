@@ -26,7 +26,7 @@ namespace DungeonGenerator
 
             Triangle newInsertion = null;
 
-
+            //Find a triangle that bounds this point
             foreach (Triangle triangle in triangles)
             {
                 if (triangle.PointInCircumCircle(_point))
@@ -36,12 +36,14 @@ namespace DungeonGenerator
                 }
             }
 
+            //Validation. This shouldt get hit
             if (newInsertion == null)
             {
                 Assert.IsNotNull(newInsertion, "Unable to find triange to split for insertion");
                 return;
             }
 
+            //Create 3 new tris from the parent tri, All connecting 2 points from the parent and one from the new point
             triangles.Remove(newInsertion);
             Triangle newTriangle1 = new Triangle(newInsertion.Point1, newInsertion.Point2, _point);
             Triangle newTriangle2 = new Triangle(newInsertion.Point2, newInsertion.Point3, _point);
@@ -59,6 +61,24 @@ namespace DungeonGenerator
 
 
 
+        }
+
+        /// <summary>
+        /// Find all the triangles that need to be flipped. Called as a result of inserting a nw point
+        /// </summary>
+        /// <param name="_triangle"></param>
+        public void Triangulate(Triangle _triangle)
+        {
+            List<Triangle> trisToFlip = new List<Triangle>();
+            List<(Vector2,Vector2)> edges = new List<(Vector2,Vector2)>();
+            edges.Add((_triangle.Point1, _triangle.Point2));
+            edges.Add((_triangle.Point2,  _triangle.Point3));
+            edges.Add((_triangle.Point3, _triangle.Point1));
+
+            foreach((Vector2,Vector2) edge in edges)
+            {
+                
+            }
         }
 
         public static Triangle GetSuperTriangle(List<Vector2> _points)
