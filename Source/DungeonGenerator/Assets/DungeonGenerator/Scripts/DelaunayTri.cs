@@ -8,7 +8,7 @@ using UnityEngine.Assertions;
 
 namespace DungeonGenerator
 {
-    public  class DelaunayTri
+    public class DelaunayTri
     {
         private List<Triangle> triangles = new();
         private List<Vector2> points = new();
@@ -17,7 +17,8 @@ namespace DungeonGenerator
         {
             points.Add(_point);
 
-            Assert.IsTrue(points.Count >= 3, "Cannot Generate Triangulation, Provided points are less than required to generate a triangle");
+            Assert.IsTrue(points.Count >= 3
+                , "Cannot Generate Triangulation, Provided points are less than required to generate a triangle");
             if (points.Count < 3)
                 return;
 
@@ -58,30 +59,38 @@ namespace DungeonGenerator
             triangles.Add(newTriangle1);
             triangles.Add(newTriangle2);
             triangles.Add(newTriangle3);
-
-
-
         }
 
         /// <summary>
         /// Find all the triangles that need to be flipped. Called as a result of inserting a nw point
         /// </summary>
         /// <param name="_triangle"></param>
-        public void Triangulate(Triangle _triangle)
+        private void Triangulate(Triangle _triangle)
         {
             List<Triangle> trisToFlip = new List<Triangle>();
-            List<(Vector2,Vector2)> edges = new List<(Vector2,Vector2)>();
-            edges.Add((_triangle.Point1, _triangle.Point2));
-            edges.Add((_triangle.Point2,  _triangle.Point3));
-            edges.Add((_triangle.Point3, _triangle.Point1));
+            List<Edge> edges = new List<Edge>();
+            edges.Add(new Edge(_triangle.Point1, _triangle.Point2));
+            edges.Add(new Edge(_triangle.Point2, _triangle.Point3));
+            edges.Add(new Edge(_triangle.Point3, _triangle.Point1));
 
-            foreach((Vector2,Vector2) edge in edges)
+            //For each edge, Find the triangle already in the list fo tris with a shared edge. 
+            foreach (Edge edge in edges)
             {
-                
+                Triangle neighbour = _triangle.GetNeighbour(edge);
+                if (neighbour != null && !IsDelaunayTri(_triangle, neighbour))
+                {
+                    trisToFlip.Add(neighbour);
+                }
+            }
+
+            foreach (Triangle flip in trisToFlip)
+            {
+                FlipEdge(_triangle, flip);
             }
         }
 
-        public static Triangle GetSuperTriangle(List<Vector2> _points)
+        //Returns the triangle that encapsulates all points 
+        private static Triangle GetSuperTriangle(List<Vector2> _points)
         {
             float minimumXPosition = _points[0].x;
             float minimumYPosition = _points[0].y;
@@ -101,16 +110,88 @@ namespace DungeonGenerator
             Vector2 A = new Vector2(minimumXPosition - dx, minimumYPosition - dY);
             Vector2 B = new Vector2(maximumXPosition + dx, maximumYPosition - dY);
             Vector2 C = new Vector2(minimumXPosition + dx, maximumYPosition + dY);
-            
+
             Triangle superTriangle = new Triangle(A, B, C);
             return superTriangle;
+        }
 
+        //Returns true if both tris satisfy a delaunay structure. 
+        private bool IsDelaunayTri(Triangle _triangle1, Triangle _triangle2)
+        {
+            Edge sharedEdge = GetSharedEdge(_triangle1, _triangle2);
+            if (sharedEdge == null)
+                return true;
+
+            Vector2 oppositePoint = GetOppositePoint(sharedEdge.Point1, sharedEdge.Point2, _triangle1, _triangle2);
+
+            return _triangle1.PointInCircumCircle(oppositePoint);
+        }
+
+        private void FlipEdge(Triangle _triangle1, Triangle _triangle2)
+        {
+            Edge sharedEdge = GetSharedEdge(_triangle1, _triangle2);
+            if (sharedEdge == null)
+                return;
+
+            Vector2 oppositePointTriangle1
+                = GetOppositePoint(sharedEdge.Point1, sharedEdge.Point2, _triangle1, _triangle2);
+
+            Vector2 oppositePointTriangle2
+                = GetOppositePoint(sharedEdge.Point1, sharedEdge.Point2, _triangle2, _triangle1);
+
+            Triangle newTri1 = new Triangle(sharedEdge.Point1, oppositePointTriangle1, oppositePointTriangle2);
+            Triangle newTri2 = new Triangle(sharedEdge.Point2, oppositePointTriangle2, oppositePointTriangle1);
+
+            //Remove both triangles from their parents children and add the new tris.
+            _triangle1.ParentTri.ChildrenTri.Remove(_triangle1);
+            _triangle2.ParentTri.ChildrenTri.Remove(_triangle2);
+            _triangle1.ParentTri.ChildrenTri.Add(newTri1);
+            _triangle2.ParentTri.ChildrenTri.Add(newTri2);
+
+            triangles.Remove(_triangle1);
+            triangles.Remove(_triangle2);
+
+            triangles.Add(newTri1);
+            triangles.Add(newTri2);
         }
 
 
+        private Edge GetSharedEdge(Triangle _triangle1, Triangle _triangle2)
+        {
+            foreach (Edge t1Edge in _triangle1.Edges)
+            {
+                foreach (Edge t2Edge in _triangle2.Edges)
+                {
+                    if (t1Edge.Equals(t2Edge))
+                        return t1Edge;
+                }
+            }
+
+            return null;
+        }
+
+        private Vector2 GetOppositePoint(Vector2 _point1, Vector2 _point2, Triangle _triangle1, Triangle _triangle2)
+        {
+            if (!_triangle1.Point1.Equals(_point1) && !_triangle1.Point1.Equals(_point2))
+                return _triangle1.Point1;
+
+            if (!_triangle1.Point2.Equals(_point1) && !_triangle1.Point2.Equals(_point2))
+                return _triangle1.Point2;
+
+            if (!_triangle1.Point3.Equals(_point1) && !_triangle1.Point3.Equals(_point2))
+                return _triangle1.Point3;
+
+            if (!_triangle2.Point1.Equals(_point1) && !_triangle2.Point1.Equals(_point2))
+                return _triangle2.Point1;
+
+            if (!_triangle2.Point2.Equals(_point1) && !_triangle2.Point2.Equals(_point2))
+                return _triangle2.Point2;
+
+            return _triangle2.Point3;
+        }
 
 
-    public class Triangle
+        public class Triangle
         {
             public Vector2 Point1;
             public Vector2 Point2;
@@ -121,12 +202,19 @@ namespace DungeonGenerator
 
             public Triangle ParentTri;
             public List<Triangle> ChildrenTri;
+
+            public List<Edge> Edges;
+
             public Triangle(Vector2 _point1, Vector2 _point2, Vector2 _point3)
             {
                 Point1 = _point1;
                 Point2 = _point2;
                 Point3 = _point3;
                 radius = GetRadius();
+
+                Edges.Add(new Edge(Point1, Point2));
+                Edges.Add(new Edge(Point2, Point3));
+                Edges.Add(new Edge(Point3, Point1));
             }
 
             public bool PointInCircumCircle(Vector2 _point)
@@ -139,7 +227,6 @@ namespace DungeonGenerator
                 Vector2 circumcentre;
                 float distance = Vector2.Distance(pointToCheck, Circumcentre);
                 return distance < radius;
-
             }
 
             public float GetRadius()
@@ -150,23 +237,61 @@ namespace DungeonGenerator
                 b = Vector2.Distance(Point2, Point3);
                 c = Vector2.Distance(Point3, Point1);
 
-                float bottomEquation = (a+b+c) * (b +c-a) * (c+ a   -b) * (a + b - c);
+                float bottomEquation = (a + b + c) * (b + c - a) * (c + a - b) * (a + b - c);
                 float rad = (a * b * c) / MathF.Sqrt(bottomEquation);
-                return rad; 
+                return rad;
+            }
+
+            //Returns the neighbouring triangle of this edge.
+            public Triangle GetNeighbour(Edge _edge)
+            {
+                //Cache data
+
+                Vector2 point1 = _edge.Point1;
+                Vector2 point2 = _edge.Point2;
+
+                if (point1.Equals(Point1) && point2.Equals(Point2) ||
+                    point1.Equals(Point2) && point2.Equals(Point1))
+                    return ChildrenTri.FirstOrDefault(t =>
+                        t.Point1.Equals(Point3) || t.Point2.Equals(Point3) || t.Point3.Equals(Point3));
+
+                if (point1.Equals(Point2) && point2.Equals(Point3) || point1.Equals(Point3) && point2.Equals(Point2))
+                    return ChildrenTri.FirstOrDefault(t =>
+                        t.Point1.Equals(Point1) || t.Point2.Equals(Point1) || t.Point3.Equals(Point1));
+
+
+                if (point1.Equals(Point3) && point2.Equals(Point1) || point1.Equals(Point1) && point2.Equals(Point3))
+                    return ChildrenTri.FirstOrDefault(t =>
+                        t.Point1.Equals(Point2) || t.Point1.Equals(Point2) || t.Point1.Equals(Point2));
+
+                return null;
             }
         }
 
-        public struct Edge
+        public class Edge
         {
             public Vector2 Point1;
             public Vector2 Point2;
+
+
             public Edge(Vector2 _point1, Vector2 _point2)
             {
                 Point1 = _point1;
                 Point2 = _point2;
             }
-        }
-          
 
+            public override bool Equals(object obj)
+            {
+                Edge other = (Edge)obj;
+
+
+                if (other.Point1 == Point1 && other.Point2 == Point2 ||
+                    other.Point1 == Point2 && other.Point2 == Point1)
+                    return true;
+
+
+                return false;
+            }
+        }
     }
 }
