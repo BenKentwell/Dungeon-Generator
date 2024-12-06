@@ -40,6 +40,11 @@ namespace DungeonGenerator
         [EditorButton("Generate", ButtonWidth = 200)]
         public bool StartGenerating;
 
+        //Allows room generation to be called in editor
+        [EditorButton("DeleteMesh", ButtonWidth = 200)]
+        public bool DeleteConnections;
+
+        private DelaunayTri delaunayMesh;
 
         /// <summary>
         /// This function is the bread and butter of the alogorithm.
@@ -47,6 +52,8 @@ namespace DungeonGenerator
         /// </summary>
         void Generate()
         {
+            
+            delaunayMesh = new DelaunayTri();
             tiles = new GameObject[MaximumLevelSize[0], MaximumLevelSize[1]];
 
             //Get location of tile 0,0, then send postions through get location function. 
@@ -153,8 +160,19 @@ namespace DungeonGenerator
                 WallParent wallParent = wallsGameObject.AddComponent<WallParent>();
                 wallParent.Generate(roomData, WallObject);
 
+                Vector2 connectionPoint
+                    = room.gameObject.transform.position + new Vector3(col.offset.x, col.offset.y, 0);
+
+                delaunayMesh.InsertPoint(connectionPoint);
+
                 roomColliders.Add(roomColPair);
             }
+            //delaunayMesh.RemoveSuperTriangle();
+        }
+
+        private void DeleteMesh()
+        {
+            delaunayMesh = null;
         }
 
 
@@ -197,6 +215,27 @@ namespace DungeonGenerator
             ratio.x = ratioX * tileSize.x;
             ratio.y = ratioY * tileSize.y;
             return ratio;
+        }
+
+        void OnDrawGizmos()
+        {
+            if (delaunayMesh != null && delaunayMesh.triangles.Count > 3)
+            {
+                Gizmos.color = Color.green;
+                foreach (DelaunayTri.Triangle triangle in delaunayMesh.triangles)
+                {
+                    Gizmos.DrawLine(triangle.Point1, triangle.Point2);
+                    Gizmos.DrawLine(triangle.Point2, triangle.Point3);
+                    Gizmos.DrawLine(triangle.Point3, triangle.Point1);
+                }
+
+                Gizmos.color = Color.red;
+                foreach (Vector2 point in delaunayMesh.points)
+                {
+                    Gizmos.DrawCube(point, Vector3.one);
+                }
+                Gizmos.color = Color.yellow;
+      }
         }
     }
 
