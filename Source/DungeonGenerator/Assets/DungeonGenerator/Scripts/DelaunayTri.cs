@@ -17,26 +17,28 @@ namespace DungeonGenerator
 
         private Triangle superTriangle;
 
+        private List<Vector2> initialPoints = new();
 
         public void InsertPoint(Vector2 _point)
         {
             points.Add(_point);
 
-
             if (points.Count < 3)
+            {
                 return;
+            }
 
             if (triangles.Count == 0)
             {
                 superTriangle = GetSuperTriangle(points);
                 triangles.Add(superTriangle);
 
-
                 foreach (Vector2 point in points)
                 {
-                    if(point != _point)
-                        CreateNewTris(point);
+                    CreateNewTris(point);
                 }
+
+                return;
             }
 
             CreateNewTris(_point);
@@ -75,6 +77,7 @@ namespace DungeonGenerator
             newInsertion.ChildrenTri.Add(newTriangle1);
             newInsertion.ChildrenTri.Add(newTriangle2);
             newInsertion.ChildrenTri.Add(newTriangle3);
+
             triangles.Add(newTriangle1);
             triangles.Add(newTriangle2);
             triangles.Add(newTriangle3);
@@ -92,20 +95,23 @@ namespace DungeonGenerator
         {
             List<Triangle> trisToFlip = new List<Triangle>();
 
+
             //For each edge, Find the triangle already in the list fo tris with a shared edge. 
             foreach (Edge edge in _triangle.Edges)
             {
-                Triangle neighbour = _triangle.GetNeighbour(triangles, edge);
+                Triangle neighbour = _triangle.GetNeighbour(edge);
 
                 if (neighbour != null && !IsDelaunayTri(_triangle, neighbour))
                 {
                     trisToFlip.Add(neighbour);
+                    //FlipEdge(_triangle, neighbour);
                 }
             }
 
+
             foreach (Triangle flip in trisToFlip)
             {
-                FlipEdge(flip, _triangle);
+                FlipEdge(_triangle, flip);
             }
         }
 
@@ -119,7 +125,6 @@ namespace DungeonGenerator
                 if (edge != null)
                 {
                     badTris.Add(triangle);
-                    continue;
                 }
             }
 
@@ -135,9 +140,8 @@ namespace DungeonGenerator
             triangles.Remove(superTriangle);
         }
 
-
         //Returns the triangle that encapsulates all points 
-        private static Triangle GetSuperTriangle(List<Vector2> _points)
+        private Triangle GetSuperTriangle(List<Vector2> _points)
         {
             float minimumXPosition = _points[0].x;
             float minimumYPosition = _points[0].y;
@@ -147,16 +151,16 @@ namespace DungeonGenerator
             {
                 minimumXPosition = point.x < minimumXPosition ? point.x : minimumXPosition;
                 minimumYPosition = point.y < minimumYPosition ? point.y : minimumYPosition;
-
                 maximumXPosition = point.x > maximumXPosition ? point.x : maximumXPosition;
                 maximumYPosition = point.y > maximumYPosition ? point.y : maximumYPosition;
             }
 
             float dx = maximumXPosition - minimumXPosition;
             float dY = maximumYPosition - minimumYPosition;
+
             Vector2 A = new Vector2(minimumXPosition - dx, minimumYPosition - dY);
             Vector2 B = new Vector2(maximumXPosition + dx, minimumYPosition - dY);
-            Vector2 C = new Vector2(minimumXPosition + dx, maximumYPosition + dY);
+            Vector2 C = new Vector2(maximumXPosition - dx, maximumYPosition + dY * 2);
 
             Triangle superTriangle = new Triangle(A, B, C);
             return superTriangle;
@@ -187,10 +191,9 @@ namespace DungeonGenerator
                 = GetOppositePoint(sharedEdge.Point1, sharedEdge.Point2, _triangle2, _triangle1);
 
             Triangle newTri1 = new Triangle(sharedEdge.Point1, oppositePointTriangle1, oppositePointTriangle2);
-            Triangle newTri2 = new Triangle(sharedEdge.Point2, oppositePointTriangle1, oppositePointTriangle2);
+            Triangle newTri2 = new Triangle(sharedEdge.Point2, oppositePointTriangle2, oppositePointTriangle1);
 
             //Remove both triangles from their parents children and add the new tris.
-
             if (_triangle1.ParentTri != null)
             {
                 _triangle1.ParentTri.ChildrenTri.Remove(_triangle1);
@@ -218,8 +221,8 @@ namespace DungeonGenerator
             {
                 foreach (Edge t2Edge in _triangle2.Edges)
                 {
-                    if (t1Edge.Equals(t2Edge))
-                        return t1Edge;
+                    if (t1Edge.EqualsEdge(t2Edge))
+                        return t2Edge;
                 }
             }
 
@@ -245,7 +248,6 @@ namespace DungeonGenerator
 
             return _triangle2.Point3;
         }
-
 
         public class Triangle
         {
@@ -301,14 +303,17 @@ namespace DungeonGenerator
             public bool PointInCircumCircle(Vector2 _point)
             {
                 //Cache Data
-                Vector2 pointToCheck = _point;
-                Vector2 triPoint1 = Point1;
-                Vector2 triPoint2 = Point2;
-                Vector2 triPoint3 = Point3;
-                Vector2 dPoint = _point;
+                float ax = Point1.x - _point.x;
+                float ay = Point1.y - _point.y;
+                float bx = Point2.x - _point.x;
+                float by = Point2.y - _point.y;
+                float cx = Point2.x - _point.x;
+                float cy = Point2.x - _point.y;
 
-                float d = (triPoint1.x - dPoint.x) * (triPoint2.y - triPoint3.y) -
-                          (triPoint2.x - triPoint3.x) * (triPoint1.y - dPoint.y);
+                float d = ((ax * ax + ay * ay) * (bx * cx - cx * by) -
+                           (bx * bx + by * by) * (ax * cy - cx * ay) +
+                           (cx * cx + cy * cy) * (ax * by - bx * ay)
+                    );
 
                 // float distance = Vector2.Distance(pointToCheck, Circumcentre);
                 return d > 0;
@@ -322,16 +327,13 @@ namespace DungeonGenerator
                 c = Vector2.Distance(Point3, Point1);
 
                 float bottomEquation = (a + b + c) * (b + c - a) * (c + a - b) * (a + b - c);
-                float rad = (a * b * c) / MathF.Sqrt(bottomEquation);
+                float rad = (a * b * c) / (MathF.Sqrt(bottomEquation));
                 return rad;
             }
 
             //Returns the neighbouring triangle of this edge.
-            public Triangle GetNeighbour(List<Triangle> _tris, Edge _edge)
+            public Triangle GetNeighbour(Edge _edge)
             {
-                //Cache data
-
-                /*
                 Vector2 point1 = _edge.Point1;
                 Vector2 point2 = _edge.Point2;
 
@@ -348,22 +350,16 @@ namespace DungeonGenerator
                 if (point1.Equals(Point3) && point2.Equals(Point1) || point1.Equals(Point1) && point2.Equals(Point3))
                     return ChildrenTri.FirstOrDefault(t =>
                         t.Point1.Equals(Point2) || t.Point2.Equals(Point2) || t.Point3.Equals(Point2));
-                        */
-
-
-                foreach (Triangle tri in _tris)
-                {
-                    if (tri == this)
-                        continue;
-
-                    foreach (Edge edge in tri.Edges)
-                    {
-                        if (edge.Equals(_edge))
-                            return tri;
-                    }
-                }
 
                 return null;
+                /*foreach (Edge edge in _tri.Edges)
+                {
+                    if (edge.EqualsEdge(_edge))
+                        return _tri;
+                }
+
+
+            return null;*/
             }
         }
 
@@ -379,7 +375,7 @@ namespace DungeonGenerator
                 Point2 = _point2;
             }
 
-            public override bool Equals(object obj)
+            /*public override bool Equals(object obj)
             {
                 Edge other = (Edge)obj;
 
@@ -390,11 +386,15 @@ namespace DungeonGenerator
 
 
                 return false;
-            }
+            }*/
 
-            protected bool Equals(Edge other)
+            public bool EqualsEdge(Edge other)
             {
-                return Point1.Equals(other.Point1) && Point2.Equals(other.Point2);
+                if (Point1.Equals(other.Point1) && Point2.Equals(other.Point2) ||
+                    Point2.Equals(other.Point1) && Point1.Equals(other.Point2))
+                    return true;
+
+                return false;
             }
 
             public override int GetHashCode()

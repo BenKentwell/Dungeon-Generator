@@ -6,6 +6,7 @@ using System.Numerics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Assertions;
+using Debug = UnityEngine.Debug;
 using Rect = DungeonGenerator.EditorCollision.Rect;
 using Quaternion = UnityEngine.Quaternion;
 using Random = UnityEngine.Random;
@@ -52,7 +53,6 @@ namespace DungeonGenerator
         /// </summary>
         void Generate()
         {
-            
             delaunayMesh = new DelaunayTri();
             tiles = new GameObject[MaximumLevelSize[0], MaximumLevelSize[1]];
 
@@ -121,7 +121,7 @@ namespace DungeonGenerator
                 room.name = "Room : " + roomID + " {" + RoomsToSpawn[i].name + "}";
 
                 Vector2 boundsSize = WallObject.GetComponent<SpriteRenderer>().bounds.size;
-
+                room.AddComponent<Rigidbody2D>();
                 GameObject wallsGameObject = new GameObject("Room" + roomID + "Walls");
                 wallsGameObject.transform.SetParent(room.transform, true);
 
@@ -167,7 +167,14 @@ namespace DungeonGenerator
 
                 roomColliders.Add(roomColPair);
             }
+
             //delaunayMesh.RemoveSuperTriangle();
+
+            Debug.Log(delaunayMesh.triangles.Count);
+            foreach (DelaunayTri.Triangle tri in delaunayMesh.triangles)
+            {
+                Debug.Log($"{tri.Point1}, {tri.Point2}, {tri.Point3} ");
+            }
         }
 
         private void DeleteMesh()
@@ -217,7 +224,7 @@ namespace DungeonGenerator
             return ratio;
         }
 
-        void OnDrawGizmos()
+        void OnDrawGizmosSelected()
         {
             if (delaunayMesh != null && delaunayMesh.triangles.Count > 3)
             {
@@ -234,8 +241,9 @@ namespace DungeonGenerator
                 {
                     Gizmos.DrawCube(point, Vector3.one);
                 }
+
                 Gizmos.color = Color.yellow;
-      }
+            }
         }
     }
 
