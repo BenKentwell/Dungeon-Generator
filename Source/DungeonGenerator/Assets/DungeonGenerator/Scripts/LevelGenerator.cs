@@ -12,6 +12,7 @@ using Quaternion = UnityEngine.Quaternion;
 using Random = UnityEngine.Random;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
+using static DungeonGenerator.DelaunayTri;
 
 namespace DungeonGenerator
 {
@@ -168,7 +169,7 @@ namespace DungeonGenerator
                 roomColliders.Add(roomColPair);
             }
 
-            //delaunayMesh.RemoveSuperTriangle();
+            //    delaunayMesh.RemoveSuperTriangle();
 
             Debug.Log(delaunayMesh.triangles.Count);
             foreach (DelaunayTri.Triangle tri in delaunayMesh.triangles)
@@ -224,22 +225,29 @@ namespace DungeonGenerator
             return ratio;
         }
 
-        void OnDrawGizmosSelected()
+        void OnDrawGizmos()
         {
-            if (delaunayMesh != null && delaunayMesh.triangles.Count > 3)
+            if (delaunayMesh != null)
             {
-                Gizmos.color = Color.green;
+                Gizmos.color = new Color(0,1,1,1);
                 foreach (DelaunayTri.Triangle triangle in delaunayMesh.triangles)
                 {
+                    Gizmos.color = new Color(triangle.index % 3 - 2, triangle.index % 3 - 1, triangle.index % 3);
                     Gizmos.DrawLine(triangle.Point1, triangle.Point2);
                     Gizmos.DrawLine(triangle.Point2, triangle.Point3);
                     Gizmos.DrawLine(triangle.Point3, triangle.Point1);
                 }
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawLine(delaunayMesh.superTriangle.Point1 * 1.1f, delaunayMesh.superTriangle.Point2 * 1.1f);
+                Gizmos.DrawLine(delaunayMesh.superTriangle.Point2 * 1.1f, delaunayMesh.superTriangle.Point3 * 1.1f);
+                Gizmos.DrawLine(delaunayMesh.superTriangle.Point3 * 1.1f, delaunayMesh.superTriangle.Point1 * 1.1f);
 
                 Gizmos.color = Color.red;
                 foreach (Vector2 point in delaunayMesh.points)
                 {
-                    Gizmos.DrawCube(point, Vector3.one);
+                    
+                  Gizmos.DrawCube(point , Vector3.one);
+                   
                 }
 
                 Gizmos.color = Color.yellow;

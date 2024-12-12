@@ -20,4 +20,6 @@ MonoBehaviour:
   Interior:
   - _interiorGameObject: {fileID: 122309522969152571, guid: ed7606dd577ca7a4e9fe3325e6b2652c, type: 3}
     _weight: 1
+  - _interiorGameObject: {fileID: 122309522969152571, guid: e0d15b976313605468e420ee4d3fcc80, type: 3}
+    _weight: 20
   assignSize: 0
