@@ -164,17 +164,18 @@ namespace DungeonGenerator
                 Vector2 connectionPoint
                     = room.gameObject.transform.position + new Vector3(col.offset.x, col.offset.y, 0);
 
-                delaunayMesh.InsertPoint(connectionPoint);
+                delaunayMesh.AddPoint(connectionPoint);
 
                 roomColliders.Add(roomColPair);
             }
 
-            //    delaunayMesh.RemoveSuperTriangle();
+            delaunayMesh.TriangulateAll();
+               // delaunayMesh.RemoveSuperTriangle();
 
             Debug.Log(delaunayMesh.triangles.Count);
             foreach (DelaunayTri.Triangle tri in delaunayMesh.triangles)
             {
-                Debug.Log($"{tri.Point1}, {tri.Point2}, {tri.Point3} ");
+               // Debug.Log($"{tri.Point1}, {tri.Point2}, {tri.Point3} ");
             }
         }
 
@@ -232,7 +233,6 @@ namespace DungeonGenerator
                 Gizmos.color = new Color(0,1,1,1);
                 foreach (DelaunayTri.Triangle triangle in delaunayMesh.triangles)
                 {
-                    Gizmos.color = new Color(triangle.index % 3 - 2, triangle.index % 3 - 1, triangle.index % 3);
                     Gizmos.DrawLine(triangle.Point1, triangle.Point2);
                     Gizmos.DrawLine(triangle.Point2, triangle.Point3);
                     Gizmos.DrawLine(triangle.Point3, triangle.Point1);
