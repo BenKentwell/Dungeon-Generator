@@ -113,7 +113,7 @@ namespace DungeonGenerator
             //This will increase performance
             Vector2 AverageLocationOfRooms = Vector2.zero;
 
-
+            Vector2 endRoom = new Vector2();
             for (int i = 0; i < RoomsToSpawn.Count; i++)
             {
                 string roomID = "" + (i + 1);
@@ -156,6 +156,7 @@ namespace DungeonGenerator
                         if (k > 100)
                             break;
                     }
+                    
                 }
 
                 WallParent wallParent = wallsGameObject.AddComponent<WallParent>();
@@ -165,11 +166,14 @@ namespace DungeonGenerator
                     = room.gameObject.transform.position + new Vector3(col.offset.x, col.offset.y, 0);
 
                 delaunayMesh.AddPoint(connectionPoint);
+                if (i == roomsRequiredToSpawn.Count - 1)
+                    endRoom = connectionPoint;
 
                 roomColliders.Add(roomColPair);
             }
 
             delaunayMesh.TriangulateAll();
+            delaunayMesh.MST.GetTree(delaunayMesh.triangles,delaunayMesh.points[0]);
                // delaunayMesh.RemoveSuperTriangle();
 
             Debug.Log(delaunayMesh.triangles.Count);
@@ -228,14 +232,12 @@ namespace DungeonGenerator
 
         void OnDrawGizmos()
         {
-            if (delaunayMesh != null)
+            if ( delaunayMesh != null && delaunayMesh.MST != null)
             {
                 Gizmos.color = new Color(0,1,1,1);
-                foreach (DelaunayTri.Triangle triangle in delaunayMesh.triangles)
+                foreach (DelaunayTri.Triangle.Edge edge in delaunayMesh.MST.minSpanningTree)
                 {
-                    Gizmos.DrawLine(triangle.Point1, triangle.Point2);
-                    Gizmos.DrawLine(triangle.Point2, triangle.Point3);
-                    Gizmos.DrawLine(triangle.Point3, triangle.Point1);
+                    Gizmos.DrawLine(edge.Point1, edge.Point2);
                 }
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawLine(delaunayMesh.superTriangle.Point1 * 1.1f, delaunayMesh.superTriangle.Point2 * 1.1f);

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using Unity.Mathematics;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
@@ -21,6 +22,8 @@ namespace DungeonGenerator
         public List<Triangle> triangles = new();
         public List<Vector2> points = new();
        public List<Edge> edges = new();
+
+       public MinimumSpanningTree MST = new MinimumSpanningTree();
 
         public int iter = 0;
 
@@ -146,6 +149,7 @@ namespace DungeonGenerator
                 }
             }
         }
+
 
         private void CreateNewTris(Vector2 _point)
         {
@@ -544,13 +548,20 @@ namespace DungeonGenerator
                 public Vector2 Point2;
                 public bool isBad;
 
-                private float weight;
+                public float Weight { get; private set; }
                 public Edge(Vector2 _point1, Vector2 _point2)
                 {
                     isBad = false;
                     Point1 = _point1;
                     Point2 = _point2;
-                    weight = Vector2.Distance(Point1, Point2);
+                    Weight = Vector2.Distance(Point1, Point2);
+                }
+
+                public bool HasPoint(Vector2 _point)
+                {
+                    bool has = false;
+                    has = (_point == Point1 || _point == Point2) ? true : false;
+                    return has;
                 }
 
                 /*public override bool Equals(object obj)
