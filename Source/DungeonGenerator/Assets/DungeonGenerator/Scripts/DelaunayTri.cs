@@ -27,63 +27,20 @@ namespace DungeonGenerator
 
         public int iter = 0;
 
-        public Triangle superTriangle { get; private set; }
+        public Triangle SuperTriangle { get; private set; }
 
         public void AddPoint(Vector2 _point)
         {
             points.Add(_point);
         }
 
-        public void GenerateMesh()
-        {
-            if (points.Count < 3)
-            {
-                return;
-            }
-
-            superTriangle = GetSuperTriangle(points);
-            triangles.Add(superTriangle);
-            // points.Add(superTriangle.Point1);
-            // points.Add(superTriangle.Point2);
-            // points.Add(superTriangle.Point3);
-            /*foreach (Vector2 point in points)
-            {
-                CreateNewTris(point);
-            }*/
-
-            foreach (Vector2 point in points)
-            {
-                CreateNewTris(point);
-            }
-        }
 
         public void TriangulateAll()
         {
-            {
-                float minX = points[0].x;
-                float minY = points[0].y;
-                float maxX = minX;
-                float maxY = minY;
-
-                foreach (Vector2 vertex in points)
-                {
-                    if (vertex.x < minX) minX = vertex.x;
-                    if (vertex.x > maxX) maxX = vertex.x;
-                    if (vertex.y < minY) minY = vertex.y;
-                    if (vertex.y > maxY) maxY = vertex.y;
-                }
-
-                float dx = maxX - minX;
-                float dy = maxY - minY;
-                float deltaMax = Mathf.Max(dx, dy) * 2;
-
-                Vector2 p1 = new Vector2(minX - 1, minY - 1);
-                Vector2 p2 = new Vector2(minX - 1, maxY + deltaMax);
-                Vector2 p3 = new Vector2(maxX + deltaMax, minY - 1);
-
-
-                superTriangle = new Triangle(p1, p2, p3);
-                triangles.Add(superTriangle);
+            
+                
+                SuperTriangle = GetSuperTriangle(points);
+                triangles.Add(SuperTriangle);
                 foreach (Vector2 point in points)
                 {
                     List<Edge> polygon = new List<Edge>();
@@ -103,7 +60,7 @@ namespace DungeonGenerator
 
                     for (int i = 0; i < polygon.Count; i++)
                     {
-                        for (int j = i + 1; j < polygon.Count; j++)
+                        for (int j = i+1; j < polygon.Count; j++)
                         {
                             if (polygon[i].EqualsEdge(polygon[j]))
                             {
@@ -121,8 +78,8 @@ namespace DungeonGenerator
                     }
                 }
 
-                triangles.RemoveAll((Triangle t) => t.ContainsVertex(p1) || t.ContainsVertex(p2) ||
-                                                    t.ContainsVertex(p3));
+                triangles.RemoveAll((Triangle t) => t.ContainsVertex(SuperTriangle.Point1) || t.ContainsVertex(SuperTriangle.Point2) ||
+                                                    t.ContainsVertex(SuperTriangle.Point3));
 
                 HashSet<Edge> edgeSet = new HashSet<Edge>();
 
@@ -147,141 +104,35 @@ namespace DungeonGenerator
                         edges.Add(ca);
                     }
                 }
-            }
-        }
-
-
-        private void CreateNewTris(Vector2 _point)
-        {
-            Triangle newInsertion = null;
-            float rad = float.MaxValue;
-
-            // Find a triangle that bounds this point
-            foreach (Triangle triangle in triangles)
-            {
-                if (triangle.PointInCircumCircle(_point) && triangle.radius < rad)
-                {
-                    newInsertion = triangle;
-                    rad = triangle.radius;
-                }
-            }
-
-            // If no valid insertion triangle is found, exit early
-            if (newInsertion == null)
-            {
-                Debug.LogWarning("No valid triangle found for point: " + _point);
-                return;
-            }
-
-            Debug.Log("Inserting point: " + _point + " into triangle: " + newInsertion);
-
-            // Create 3 new triangles from the parent triangle
-            triangles.Remove(newInsertion);
-
-            Triangle newTriangle1 = new Triangle(_point, newInsertion.Point1, newInsertion.Point2);
-            Triangle newTriangle2 = new Triangle(newInsertion.Point2, _point, newInsertion.Point3);
-            Triangle newTriangle3 = new Triangle(_point, newInsertion.Point3, newInsertion.Point1);
-            newInsertion.ChildrenTri.Add(newTriangle1);
-            newInsertion.ChildrenTri.Add(newTriangle2);
-            newInsertion.ChildrenTri.Add(newTriangle3);
-
-            newTriangle1.ParentTri = newInsertion;
-            newTriangle2.ParentTri = newInsertion;
-            newTriangle3.ParentTri = newInsertion;
-            // Log new triangles created
-            Debug.Log("Created new triangles: " + newTriangle1 + ", " + newTriangle2 + ", " + newTriangle3);
-
-            triangles.Add(newTriangle1);
-            triangles.Add(newTriangle2);
-            triangles.Add(newTriangle3);
-
-            Debug.Log("There are " +triangles.Count + "triangles");
-            
-            Triangulate(newTriangle1);
-            Debug.Log("There are " + triangles.Count + "triangles");
-            Triangulate(newTriangle2);
-            Debug.Log("There are " + triangles.Count + "triangles");
-            Triangulate(newTriangle3);
-        }
-
-        /// <summary>
-        /// Find all the triangles that need to be flipped. Called as a result of inserting a nw point
-        /// </summary>
-        /// <param name="_triangle"></param>
-        private void Triangulate(Triangle _triangle)
-        {
-            List<Triangle> trisToFlip = new List<Triangle>();
-
-
-            //For each edge, Find the triangle already in the list fo tris with a shared edge. 
-            for(int i = 0; i < _triangle.Edges.Count; i++)
-            {
-                Triangle neighbour = _triangle.GetNeighbour(_triangle.Edges[i], triangles);
-
-                if (neighbour != null && !IsDelaunayTri(_triangle, neighbour) && neighbour != _triangle)
-                {
-                    trisToFlip.Add(neighbour);
-                    
-                }
-            }
-
-            foreach (Triangle flip in trisToFlip)
-            {
-                FlipEdge(_triangle, flip);
-                
-            }
-        }
-
-        public void RemoveSuperTriangle()
-        {
-            List<Triangle> badTris = new List<Triangle>();
-
-            points.Remove(superTriangle.Point1);
-            points.Remove(superTriangle.Point2);
-            points.Remove(superTriangle.Point3);
-
-            triangles.Remove(superTriangle);
-            foreach (Triangle triangle in triangles)
-            {
-                Edge edge = GetSharedEdge(superTriangle, triangle);
-                if (edge != null)
-                {
-                    badTris.Add(triangle);
-                    continue;
-                }
-            }
-
-            foreach (Triangle badTri in badTris)
-            {
-                triangles.Remove(badTri);
-            }
         }
 
         //Returns the triangle that encapsulates all points 
+        
         private Triangle GetSuperTriangle(List<Vector2> _points)
         {
-            float minimumXPosition = _points[0].x;
-            float minimumYPosition = _points[0].y;
-            float maximumXPosition = _points[0].x;
-            float maximumYPosition = _points[0].y;
-            foreach (Vector2 point in _points)
+            float minX = points[0].x;
+            float minY = points[0].y;
+            float maxX = minX;
+            float maxY = minY;
+
+            foreach (Vector2 vertex in points)
             {
-                minimumXPosition = point.x < minimumXPosition ? point.x : minimumXPosition;
-                minimumYPosition = point.y < minimumYPosition ? point.y : minimumYPosition;
-                maximumXPosition = point.x > maximumXPosition ? point.x : maximumXPosition;
-                maximumYPosition = point.y > maximumYPosition ? point.y : maximumYPosition;
+                if (vertex.x < minX) minX = vertex.x;
+                if (vertex.x > maxX) maxX = vertex.x;
+                if (vertex.y < minY) minY = vertex.y;
+                if (vertex.y > maxY) maxY = vertex.y;
             }
 
-            float dx = maximumXPosition - minimumXPosition;
-            float dY = maximumYPosition - minimumYPosition;
 
-            Vector2 A = new Vector2(minimumXPosition - dx , minimumYPosition - dY*10 );
-            Vector2 B = new Vector2(maximumXPosition + dx * 10 , minimumYPosition - dY*10 );
-            Vector2 C = new Vector2(maximumXPosition - dx , maximumYPosition + dY * 10
-                );
+            float dx = maxX - minX;
+            float dy = maxY - minY;
+            float deltaMax = Mathf.Max(dx, dy) * 2;
 
-            Triangle superTriangle = new Triangle(A, B, C);
-            return superTriangle;
+            Vector2 p1 = new Vector2(minX - 1, minY - 1);
+            Vector2 p2 = new Vector2(minX - 1, maxY + deltaMax);
+            Vector2 p3 = new Vector2(maxX + deltaMax, minY - 1);
+
+            return new Triangle(p1, p2, p3);
         }
 
         //Returns true if both tris satisfy a delaunay structure. 
@@ -579,10 +430,15 @@ namespace DungeonGenerator
 
                 public bool EqualsEdge(Edge other)
                 {
-                    if (Point1.Equals(other.Point1) && Point2.Equals(other.Point2) ||
-                        Point2.Equals(other.Point1) && Point1.Equals(other.Point2))
-                        return true;
+                    float epsilon = 0.001f;
+                    float distance1 = Vector2.Distance(other.Point1, Point1);
+                    float distance2 = Vector2.Distance(other.Point2, Point2);
+                    float distance3 = Vector2.Distance(other.Point2, Point1);
+                    float distance4 = Vector2.Distance(other.Point1, Point2);
 
+                    if((distance1 < epsilon && distance2 < epsilon) || (distance3 < epsilon && distance4 < epsilon))
+                        return true;
+                
                     return false;
                 }
 

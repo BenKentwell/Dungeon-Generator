@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Threading.Tasks;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Assertions;
@@ -129,7 +130,7 @@ namespace DungeonGenerator
 
                 BoxCollider2D col = room.GetComponent<BoxCollider2D>();
                 col.offset = new Vector2(((boundsSize.x * RoomsToSpawn[i].width) / 2) - (boundsSize.x / 2),
-                    (boundsSize.y * RoomsToSpawn[i].height) / 2);
+                    (boundsSize.y * RoomsToSpawn[i].height) / 2) ;
                 col.size = new Vector2(boundsSize.x * RoomsToSpawn[i].width + boundsSize.x,
                     boundsSize.y * RoomsToSpawn[i].height + boundsSize.y);
 
@@ -137,7 +138,7 @@ namespace DungeonGenerator
                     new RoomCollider<Room, BoxCollider2D>(RoomsToSpawn[i], col);
 
                 RoomData roomData = new RoomData(RoomsToSpawn[i].width, RoomsToSpawn[i].height, boundsSize
-                    , wallsGameObject.transform);
+                    , room.transform);
                 //find a spot within bounds    
                 for (int j = 0; j < roomColliders.Count; j++)
                 {
@@ -154,7 +155,10 @@ namespace DungeonGenerator
                         MoveRoom(room, boundsSize, AverageLocationOfRooms);
                         k++;
                         if (k > 100)
+                        {
+                            Debug.Log("Overload in moving levels, Could not find suitable position for room");
                             break;
+                        }
                     }
                     
                 }
@@ -173,10 +177,12 @@ namespace DungeonGenerator
             }
 
             delaunayMesh.TriangulateAll();
-            delaunayMesh.MST.GetTree(delaunayMesh.triangles,delaunayMesh.points[0]);
+            delaunayMesh.MST.GetTree(delaunayMesh.triangles, delaunayMesh.points[0]);
+            GameObject halls = new GameObject();
+            halls.transform.SetParent(NewLevel.transform);
+            StartCoroutine(CreateHalls(delaunayMesh.MST.minSpanningTree, tileSize,halls));
                // delaunayMesh.RemoveSuperTriangle();
 
-            Debug.Log(delaunayMesh.triangles.Count);
             foreach (DelaunayTri.Triangle tri in delaunayMesh.triangles)
             {
                // Debug.Log($"{tri.Point1}, {tri.Point2}, {tri.Point3} ");
@@ -201,6 +207,31 @@ namespace DungeonGenerator
                 = GetTileLocation(new Vector3(Random.Range(xx, xy), Random.Range(yx, yy), 0), _tileSize);
         }
 
+        private IEnumerator CreateHalls(List<Triangle.Edge> _mEdges, Vector2 _tileSize, GameObject _parent,Vector2 _origin = default)
+        {
+            yield return new WaitForSecondsRealtime(0.2f);
+
+            foreach (Triangle.Edge edge in _mEdges)
+            {
+
+                LayerMask mask = LayerMask.GetMask("Wall");
+                RaycastHit2D[] hits = Physics2D.LinecastAll(edge.Point1, edge.Point2, mask);
+                foreach (RaycastHit2D hit in hits)
+                {
+                        GameObject.DestroyImmediate(hit.collider.gameObject);
+                }
+
+                //int dist = (int)Vector2.Distance(edge.Point1, edge.Point2) * 10;
+                int dist = 0;
+                for (int i = 0; i < dist; i++)
+                {
+
+                    Vector2 pos = Vector2.Lerp(edge.Point1, edge.Point2, (float)i / dist);
+                    GameObject.Instantiate(WallObject, pos,
+                        Quaternion.identity, _parent.transform);
+                }
+            }
+        }
 
         public static void Shuffle<T>(List<T> list)
         {
@@ -230,19 +261,36 @@ namespace DungeonGenerator
             return ratio;
         }
 
-        void OnDrawGizmos()
+        
+        private GameObject GetTileAt(Vector2 _position)
+        {
+
+
+            return null;
+        }
+
+        void OnDrawGizmosSelected()
         {
             if ( delaunayMesh != null && delaunayMesh.MST != null)
             {
+              /*  Gizmos.color = Color.red;
+                foreach (DelaunayTri.Triangle.Edge edge in delaunayMesh.edges)
+                {
+                    Gizmos.DrawLine(edge.Point1, edge.Point2);
+                }*/
+
                 Gizmos.color = new Color(0,1,1,1);
                 foreach (DelaunayTri.Triangle.Edge edge in delaunayMesh.MST.minSpanningTree)
                 {
                     Gizmos.DrawLine(edge.Point1, edge.Point2);
                 }
+
+               
+
                 Gizmos.color = Color.yellow;
-                Gizmos.DrawLine(delaunayMesh.superTriangle.Point1 * 1.1f, delaunayMesh.superTriangle.Point2 * 1.1f);
-                Gizmos.DrawLine(delaunayMesh.superTriangle.Point2 * 1.1f, delaunayMesh.superTriangle.Point3 * 1.1f);
-                Gizmos.DrawLine(delaunayMesh.superTriangle.Point3 * 1.1f, delaunayMesh.superTriangle.Point1 * 1.1f);
+                Gizmos.DrawLine(delaunayMesh.SuperTriangle.Point1 * 1.1f, delaunayMesh.SuperTriangle.Point2 * 1.1f);
+                Gizmos.DrawLine(delaunayMesh.SuperTriangle.Point2 * 1.1f, delaunayMesh.SuperTriangle.Point3 * 1.1f);
+                Gizmos.DrawLine(delaunayMesh.SuperTriangle.Point3 * 1.1f, delaunayMesh.SuperTriangle.Point1 * 1.1f);
 
                 Gizmos.color = Color.red;
                 foreach (Vector2 point in delaunayMesh.points)
