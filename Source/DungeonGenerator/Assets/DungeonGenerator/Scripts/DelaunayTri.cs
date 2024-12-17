@@ -38,7 +38,6 @@ namespace DungeonGenerator
         public void TriangulateAll()
         {
             
-                
                 SuperTriangle = GetSuperTriangle(points);
                 triangles.Add(SuperTriangle);
                 foreach (Vector2 point in points)
@@ -56,7 +55,7 @@ namespace DungeonGenerator
                         }
                     }
 
-                    triangles.RemoveAll((Triangle t) => t.isBad);
+                    triangles.RemoveAll((Triangle _t) => _t.isBad);
 
                     for (int i = 0; i < polygon.Count; i++)
                     {
@@ -70,7 +69,7 @@ namespace DungeonGenerator
                         }
                     }
 
-                    polygon.RemoveAll((Edge e) => e.isBad);
+                    polygon.RemoveAll(_e => _e.isBad);
 
                     foreach (var edge in polygon)
                     {
@@ -78,8 +77,8 @@ namespace DungeonGenerator
                     }
                 }
 
-                triangles.RemoveAll((Triangle t) => t.ContainsVertex(SuperTriangle.Point1) || t.ContainsVertex(SuperTriangle.Point2) ||
-                                                    t.ContainsVertex(SuperTriangle.Point3));
+                triangles.RemoveAll((Triangle _t) => _t.ContainsVertex(SuperTriangle.Point1) || _t.ContainsVertex(SuperTriangle.Point2) ||
+                                                    _t.ContainsVertex(SuperTriangle.Point3));
 
                 HashSet<Edge> edgeSet = new HashSet<Edge>();
 

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
 using Rect = DungeonGenerator.EditorCollision.Rect;
 using Quaternion = UnityEngine.Quaternion;
@@ -131,8 +132,8 @@ namespace DungeonGenerator
                 BoxCollider2D col = room.GetComponent<BoxCollider2D>();
                 col.offset = new Vector2(((boundsSize.x * RoomsToSpawn[i].width) / 2) - (boundsSize.x / 2),
                     (boundsSize.y * RoomsToSpawn[i].height) / 2) ;
-                col.size = new Vector2(boundsSize.x * RoomsToSpawn[i].width + boundsSize.x,
-                    boundsSize.y * RoomsToSpawn[i].height + boundsSize.y);
+                col.size = new Vector2(boundsSize.x * RoomsToSpawn[i].width * 2 + boundsSize.x,
+                    boundsSize.y * RoomsToSpawn[i].height *2  + boundsSize.y);
 
                 RoomCollider<Room, BoxCollider2D> roomColPair =
                     new RoomCollider<Room, BoxCollider2D>(RoomsToSpawn[i], col);
@@ -147,7 +148,6 @@ namespace DungeonGenerator
                         continue;
                     }
 
-
                     int k = 0;
                     //while (roomColPair._Collider2D.IsTouching(roomColliders[j]._Collider2D))
                     while (EditorCollision.EditorIsTouching(roomColPair._Collider2D, roomColliders[j]._Collider2D))
@@ -160,7 +160,6 @@ namespace DungeonGenerator
                             break;
                         }
                     }
-                    
                 }
 
                 WallParent wallParent = wallsGameObject.AddComponent<WallParent>();
@@ -180,13 +179,12 @@ namespace DungeonGenerator
             delaunayMesh.MST.GetTree(delaunayMesh.triangles, delaunayMesh.points[0]);
             GameObject halls = new GameObject();
             halls.transform.SetParent(NewLevel.transform);
-            StartCoroutine(CreateHalls(delaunayMesh.MST.minSpanningTree, tileSize,halls));
-               // delaunayMesh.RemoveSuperTriangle();
-
-            foreach (DelaunayTri.Triangle tri in delaunayMesh.triangles)
+            List<BoxCollider2D> cols = new List<BoxCollider2D>();
+            foreach (RoomCollider<Room, BoxCollider2D> roomCollider in roomColliders)
             {
-               // Debug.Log($"{tri.Point1}, {tri.Point2}, {tri.Point3} ");
+                cols.Add(roomCollider._Collider2D);
             }
+            StartCoroutine(CreateHalls(delaunayMesh.MST.minSpanningTree, tileSize,halls,cols) );
         }
 
         private void DeleteMesh()
@@ -207,13 +205,36 @@ namespace DungeonGenerator
                 = GetTileLocation(new Vector3(Random.Range(xx, xy), Random.Range(yx, yy), 0), _tileSize);
         }
 
-        private IEnumerator CreateHalls(List<Triangle.Edge> _mEdges, Vector2 _tileSize, GameObject _parent,Vector2 _origin = default)
+        private IEnumerator CreateHalls(List<Triangle.Edge> _mEdges, Vector2 _tileSize, GameObject _parent,List<BoxCollider2D> _rooms,Vector2 _origin = default)
         {
-            yield return new WaitForSecondsRealtime(0.2f);
+            BoxCollider2D gridTile = WallObject.GetComponent<BoxCollider2D>();
+            GameObject og = new GameObject();
+            
+            List<BoxCollider2D> emptyTile = new List<BoxCollider2D>();
+            Vector2 halfBoundsSize = gridTile.bounds.size * 0.5f;
 
+            float TilePos(float x, float _size) => x * _size;
+            float TileMinusHalf(float _f, float _f1, float _size) => TilePos(_f, _size) - _f1;
+
+            for (int i = 0; i < MaximumLevelSize[0]; i++)
+            {
+                for (int j = 0; j < MaximumLevelSize[1]; j++)
+                {
+                    GameObject newtile = Instantiate(og, new Vector3(), Quaternion.identity, _parent.transform);
+                    newtile.transform.SetLocalPositionAndRotation(new Vector2(TilePos(i, gridTile.bounds.size.x), TilePos(j, gridTile.bounds.size.y)), Quaternion.identity);
+                    BoxCollider2D col = newtile.AddComponent<BoxCollider2D>();
+                    col.size = gridTile.size;
+
+                }
+            }
+
+            yield return new WaitForSecondsRealtime(0.1f);
+            List<GameObject> Walls = new List<GameObject>();
             foreach (Triangle.Edge edge in _mEdges)
             {
-
+                Vector2 offset1 = new Vector2(edge.Point1.x - 1, edge.Point1.y - 1);
+                Vector2 offset2 = new Vector2(edge.Point2.x - 1, edge.Point2.y - 1);
+                Triangle.Edge dupEdge = new Triangle.Edge(offset1, offset2);
                 LayerMask mask = LayerMask.GetMask("Wall");
                 RaycastHit2D[] hits = Physics2D.LinecastAll(edge.Point1, edge.Point2, mask);
                 foreach (RaycastHit2D hit in hits)
@@ -221,14 +242,38 @@ namespace DungeonGenerator
                         GameObject.DestroyImmediate(hit.collider.gameObject);
                 }
 
-                //int dist = (int)Vector2.Distance(edge.Point1, edge.Point2) * 10;
-                int dist = 0;
-                for (int i = 0; i < dist; i++)
-                {
+                 hits = Physics2D.LinecastAll(dupEdge.Point1, dupEdge.Point2, mask);
 
+                foreach (RaycastHit2D hit in hits)
+                {
+                    GameObject.DestroyImmediate(hit.collider.gameObject);
+                }
+
+                int dist = (int)Vector2.Distance(edge.Point1, edge.Point2)*2;
+                
+                for (float i = 0.5f; i < dist -1; i++)
+                {
                     Vector2 pos = Vector2.Lerp(edge.Point1, edge.Point2, (float)i / dist);
-                    GameObject.Instantiate(WallObject, pos,
-                        Quaternion.identity, _parent.transform);
+                   // Vector2 pos2 = Vector2.Lerp(dupEdge.Point1, dupEdge.Point2, (float)i / dist);
+                   Walls.Add( GameObject.Instantiate(WallObject, pos,
+                        Quaternion.identity, _parent.transform));
+                  // Walls.Add(GameObject.Instantiate(WallObject, pos2,
+                       //Quaternion.identity, _parent.transform));
+                }
+            }
+
+            yield return new WaitForSecondsRealtime(0.1f);
+            foreach (BoxCollider2D room in _rooms)
+            {
+                for (int i = 0; i < Walls.Count; i++)
+                {
+                    if (Walls[i] != null && EditorCollision.EditorIsTouching(Walls[i].GetComponent<BoxCollider2D>(), room))
+                    {
+                        DestroyImmediate(Walls[i]);
+                        Walls.RemoveAt(i);
+                        i--;
+                    }
+
                 }
             }
         }

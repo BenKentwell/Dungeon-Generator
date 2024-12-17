@@ -216,7 +216,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4861175214784525766, guid: 6bbd33baea0e10944b9380a555146364, type: 3}
       propertyPath: AmountOfRooms
-      value: 15
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4861175214784525766, guid: 6bbd33baea0e10944b9380a555146364, type: 3}
       propertyPath: Rooms.Array.size
