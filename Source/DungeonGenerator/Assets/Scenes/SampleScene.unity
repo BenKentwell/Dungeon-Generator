@@ -216,7 +216,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4861175214784525766, guid: 6bbd33baea0e10944b9380a555146364, type: 3}
       propertyPath: AmountOfRooms
-      value: 3
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 4861175214784525766, guid: 6bbd33baea0e10944b9380a555146364, type: 3}
       propertyPath: Rooms.Array.size
@@ -232,11 +232,11 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: 4b0b3ffefe385524bab82d2142f9acf6, type: 2}
     - target: {fileID: 4861175214784525766, guid: 6bbd33baea0e10944b9380a555146364, type: 3}
       propertyPath: MaximumLevelSize.Array.data[0]
-      value: 50
+      value: 300
       objectReference: {fileID: 0}
     - target: {fileID: 4861175214784525766, guid: 6bbd33baea0e10944b9380a555146364, type: 3}
       propertyPath: MaximumLevelSize.Array.data[1]
-      value: 20
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 4861175214784525766, guid: 6bbd33baea0e10944b9380a555146364, type: 3}
       propertyPath: Rooms.Array.data[0]._AmountRequiredToSpawn

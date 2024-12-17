@@ -9,76 +9,72 @@ namespace DungeonGenerator
     {
         private GameObject WallObject;
 
-
+        // Generate walls for a room, ensuring correct positioning on the grid
         public void Generate(RoomData _roomData, GameObject _wallGameObject)
         {
             WallObject = _wallGameObject;
             transform.SetParent(_roomData.ParentTransform, false);
-            GenerateWall(_roomData.WallSizeX, _roomData.WallSizeY, _roomData.BoundSize, _roomData.ParentTransform
-                , _roomData.TileOriginOnSprite);
+            GenerateWall(_roomData.WallSizeX, _roomData.WallSizeY, _roomData.BoundSize, _roomData.ParentTransform, _roomData.TileOriginOnSprite);
         }
 
         /// <summary>
-        /// Generates a series of wall objects and assigns their locations in the level and the tileset
+        /// Generates a series of wall objects and assigns their locations in the level grid
         /// </summary>
-        /// <param name="_wallSizeX"> Amount of tile to spawn</param>
-        /// <param name="_wallSizeY"></param>
-        /// <param name="_boundsSize">Dimension of the wall sprite.Height or Width depending on which wall is generated </param>
+        /// <param name="_wallSizeX"> Amount of tiles in the X direction to spawn</param>
+        /// <param name="_wallSizeY"> Amount of tiles in the Y direction to spawn</param>
+        /// <param name="_boundsSize">Dimensions of the wall sprite (height or width depending on which wall is generated)</param>
         /// <param name="_tileOriginOnSprite">Ratio of the offset the origin of the sprite is. Defaults to 0.5f so origin is the middle of the sprite</param>
-        /// <exception cref="ArgumentOutOfRangeException"></exception>
-        private void GenerateWall(int _wallSizeX, int _wallSizeY, Vector2 _boundsSize
-            , Transform _parentTransform
-            , float _tileOriginOnSprite = 0.5f)
+        private void GenerateWall(int _wallSizeX, int _wallSizeY, Vector2 _boundsSize, Transform _parentTransform, float _tileOriginOnSprite = 0.5f)
         {
-            //Cache Half the bound size
+            // Cache Half the bound size to calculate proper offsets for the grid
             Vector2 halfBoundsSize = _boundsSize * _tileOriginOnSprite;
 
-            float TilePos(float x) => x * _boundsSize.x;
+            // Function to calculate position for each tile in grid
+            float TilePos(float x, float _size) => x * _size;
             string TileName(int _i, int _j) => "Wall:" + _i + "," + _j;
-            float TileMinusHalf(float _f, float _f1) => TilePos(_f) - _f1;
 
-            //top
+            // Top side walls
             for (int x = 0; x < _wallSizeX; x++)
             {
+                Vector3 tilePosition = new Vector3(TilePos(x, _boundsSize.x),
+                    TilePos(_wallSizeY, _boundsSize.y), 0);
                 GameObject tile = GameObject.Instantiate(WallObject, transform, true);
-
-                tile.transform.SetLocalPositionAndRotation(new Vector3(
-                        TileMinusHalf(x, halfBoundsSize.x),
-                        TilePos(_wallSizeY), 0),
+                tile.transform.SetLocalPositionAndRotation(tilePosition,
                     Quaternion.identity);
+
                 tile.name = TileName(x, _wallSizeY);
             }
 
-            //bottom
+            // Bottom side walls
             for (int x = 0; x < _wallSizeX; x++)
             {
                 GameObject tile = GameObject.Instantiate(WallObject, transform, true);
-                tile.transform.SetLocalPositionAndRotation(new Vector3(TileMinusHalf(x, halfBoundsSize.x), 0, 0)
-                    , Quaternion.identity);
+                tile.transform.SetLocalPositionAndRotation(new Vector3(
+                        TilePos(x, _boundsSize.x),
+                        0, 0),
+                    Quaternion.identity);
                 tile.name = TileName(x, 0);
             }
 
-            //Right
+            // Right side walls
             for (int y = 0; y < _wallSizeY + 1; y++)
             {
                 GameObject tile = GameObject.Instantiate(WallObject, transform, true);
-
                 tile.transform.SetLocalPositionAndRotation(new Vector3(
-                        TileMinusHalf(_wallSizeX, halfBoundsSize.x),
-                        TilePos(y), 0),
+                        TilePos(_wallSizeX, _boundsSize.x),
+                        TilePos(y , _boundsSize.y), 0),
                     Quaternion.identity);
                 tile.name = TileName(_wallSizeX, y);
             }
 
-            //left
+            // Left side walls
             for (int y = 1; y < _wallSizeY; y++)
             {
                 GameObject tile = GameObject.Instantiate(WallObject, transform, true);
                 tile.transform.SetLocalPositionAndRotation(new Vector3(
-                    -halfBoundsSize.y,
-                    TilePos(y),
-                    0), Quaternion.identity);
-
+                        0,
+                        TilePos(y, _boundsSize.y) , 0),
+                    Quaternion.identity);
                 tile.name = TileName(0, y);
             }
         }
