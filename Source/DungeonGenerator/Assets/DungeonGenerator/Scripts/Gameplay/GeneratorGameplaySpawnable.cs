@@ -9,8 +9,8 @@ namespace DungeonGenerator
         public int XTilePos { get; set; }
         public int YTilePos { get; set; }
 
-        
-        public virtual void Spawn() {}
+
+        public void Spawn();
     }
 
 }

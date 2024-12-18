@@ -22,6 +22,15 @@ namespace DungeonGenerator
            _spawnables = GetComponentsInChildren<IGeneratorGameplaySpawnable>();
         }
 
+        public void SpawnAll()
+        {
+            FindAllSpawnables();
+            foreach (IGeneratorGameplaySpawnable gameplaySpawnable in _spawnables)
+            {
+                gameplaySpawnable.Spawn();
+            }
+        }
+
         
     }
     

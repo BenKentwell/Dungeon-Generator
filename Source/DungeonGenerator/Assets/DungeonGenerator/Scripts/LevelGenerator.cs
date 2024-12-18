@@ -124,6 +124,8 @@ namespace DungeonGenerator
 
                 GameObject room = Instantiate(RoomsToSpawn[i].GetInteriorForRoom().gameObject, NewLevel.transform);
                 room.name = "Room : " + roomID + " {" + RoomsToSpawn[i].name + "}";
+                Interior inter = room.GetComponent<Interior>();
+                inter.SpawnAll();
 
                 Vector2 boundsSize = WallObject.GetComponent<SpriteRenderer>().bounds.size;
 
@@ -201,14 +203,13 @@ namespace DungeonGenerator
 
         private void MoveRoom(GameObject _room, Vector2 _tileSize, Vector2 _averageLocationOfRooms = default)
         {
-
             float TilePos(float x, float _size) => x * _size;
 
             // Calculate the grid boundaries
-            int xx = 0;
-            int xy = MaximumLevelSize[0] ;
-            int yx = 0;
-            int yy = MaximumLevelSize[1];
+            int xx = 10;
+            int xy = MaximumLevelSize[0]-10 ;
+            int yx = 10;
+            int yy = MaximumLevelSize[1]-10;
 
             // Get a valid grid-aligned position for the room
             Vector3 gridPosition =new Vector3(TilePos(Random.Range(xx, xy), _tileSize.x), TilePos(Random.Range(yx, yy), _tileSize.y), 0);
@@ -254,22 +255,47 @@ namespace DungeonGenerator
             foreach (Triangle.Edge edge in _mEdges)
             {
 
-                float angle = Vector2.SignedAngle(edge.Point1, edge.Point2);
-                angle -= 90f;
+                float angleRaw = Vector2.Angle(edge.Point1, edge.Point2);
+               float angle = angleRaw - 90f;
                 Vector2 newAng = new Vector2(Mathf.Sin(angle), Mathf.Cos(angle));
 
-                Vector2 offset1 = edge.Point1 + newAng * HallSize;
-                Vector2 offset2 = edge.Point2 + newAng * HallSize;
-                Triangle.Edge dupEdge = new Triangle.Edge(offset1, offset2);
 
-                Vector2 offset11 = edge.Point1 - newAng * HallSize;
-                Vector2 offset22 = edge.Point2 - newAng * HallSize;
+                /*  Vector2 offset1 = edge.Point1 + newAng * HallSize;
+                  Vector2 offset2 = edge.Point2 + newAng * HallSize;
+                  Triangle.Edge dupEdge = new Triangle.Edge(offset1, offset2);
+  */
+                /* Vector2 offset11 = edge.Point1 - newAng * HallSize;
+                 Vector2 offset22 = edge.Point2 - newAng * HallSize;
+                 Triangle.Edge dupEdge1 = new Triangle.Edge(offset11, offset22);
+
+
+                 RaycastHit2D[] hits = Physics2D.LinecastAll(dupEdge1.Point1, dupEdge1.Point2, mask);*/
+
+                Vector2 offset1 = edge.Point1 - newAng * _tileSize * HallSize;
+                Vector2 offset2 = edge.Point2 - newAng * _tileSize * HallSize;
+
+                Vector2 offset11 = edge.Point1 + newAng * _tileSize * HallSize;
+                Vector2 offset22 = edge.Point2 + newAng * _tileSize * HallSize;
+
                 Triangle.Edge dupEdge1 = new Triangle.Edge(offset11, offset22);
+                Triangle.Edge dupEdge2 = new Triangle.Edge(offset1, offset2);
 
-                
+                Vector2 Ratio(float _i) => (_i * newAng * HallSize) / 10;
+
                 LayerMask mask = LayerMask.GetMask("Wall");
-                RaycastHit2D[] hits = Physics2D.LinecastAll(dupEdge1.Point1, dupEdge1.Point2, mask);
-                foreach (RaycastHit2D hit in hits)
+                for (int i = 0; i < 20; i++)
+                {
+                    Vector2 offsetOne = Vector2.Lerp(dupEdge1.Point1, dupEdge2.Point1, (float)i / 10);
+                    Vector2 offsetTwo = Vector2.Lerp(dupEdge1.Point2, dupEdge2.Point2, (float)i / 10);
+                    Triangle.Edge dupEdge = new Triangle.Edge(offsetOne, offsetTwo);
+                    RaycastHit2D[] hits = Physics2D.LinecastAll(dupEdge.Point1, dupEdge.Point2, mask);
+                    foreach (RaycastHit2D hit in hits)
+                    {
+                        GameObject.DestroyImmediate(hit.collider.gameObject);
+                    }
+                }
+
+               /* foreach (RaycastHit2D hit in hits)
                 {
                     GameObject.DestroyImmediate(hit.collider.gameObject);
                 }
@@ -286,7 +312,7 @@ namespace DungeonGenerator
                 foreach (RaycastHit2D hit in hits)
                 {
                     GameObject.DestroyImmediate(hit.collider.gameObject);
-                }
+                }*/
             }
             yield return new WaitForSecondsRealtime(0.1f);
             List<GameObject> Walls = new List<GameObject>();
@@ -296,7 +322,7 @@ namespace DungeonGenerator
             {
                 for (int j = 0; j < MaximumLevelSize[1]; j++)
                 {
-                    // Calculate the center position of the current tile
+                    /*// Calculate the center position of the current tile
                     Vector2 tileCenter = new Vector2(TilePos(i, gridTile.x), TilePos(j, gridTile.y));
 
 
@@ -308,18 +334,18 @@ namespace DungeonGenerator
                         //Add root 2
                         //convert to vec2 and add to point 1 and 2
 
-                        float angle = Vector2.SignedAngle(edge.Point1, edge.Point2);
-                        angle -= 90;
+                        float angle = Vector2.Angle(edge.Point1, edge.Point2);
+                        angle -= 90f;
                         Vector2 newAng = new Vector2(Mathf.Sin(angle), Mathf.Cos(angle));
 
-                        Vector2 offset1 = edge.Point1 + newAng * HallSize;
-                        Vector2 offset2 = edge.Point2 + newAng * HallSize;
+                        Vector2 offset1 = edge.Point1 + (newAng * _tileSize) * (HallSize + 0.5f);
+                        Vector2 offset2 = edge.Point2 + (newAng * _tileSize) * (HallSize + 0.5f);
                         Triangle.Edge dupEdge = new Triangle.Edge(offset1, offset2);
-
-                        Vector2 offset11 = edge.Point1 - newAng * HallSize;
-                        Vector2 offset22 = edge.Point2 - newAng * HallSize;
+                        Debug.DrawLine(dupEdge.Point1 ,dupEdge.Point2);
+                        Vector2 offset11 = edge.Point1 - (newAng * _tileSize) * (HallSize + 0.5f);
+                        Vector2 offset22 = edge.Point2 - (newAng * _tileSize) * (HallSize + 0.5f);
                         Triangle.Edge dupEdge1 = new Triangle.Edge(offset11, offset22);
-
+                        Debug.DrawLine(dupEdge1.Point1, dupEdge1.Point2);
                         if (IsTileIntersectingEdge(tileCenter, dupEdge1, gridTile))
                         {
                             // Instantiate wall at the tile position
@@ -336,9 +362,60 @@ namespace DungeonGenerator
                             wall.layer = LayerMask.NameToLayer("Hall");
                             Walls.Add(wall);
                             break;
+                        }*/
+
+                    // Calculate the center position of the current tile
+                    Vector2 tileCenter = new Vector2(TilePos(i, gridTile.x), TilePos(j, gridTile.y));
+
+                    // Check if the tile intersects with any edge
+                    foreach (Triangle.Edge edge in _mEdges)
+                    {
+                        // Calculate the direction of the edge
+                        Vector2 edgeDir = edge.Point2 - edge.Point1;
+
+                        // Get the perpendicular direction to the edge (normal)
+                        Vector2 perpendicular = new Vector2(-edgeDir.y, edgeDir.x);  // Perpendicular to the edge
+
+                        // Normalize the perpendicular direction to ensure consistent offset
+                        perpendicular.Normalize();
+
+                        // Set the fixed distance from the edge to the wall
+                        float fixedDistance = (_tileSize.x * (HallSize + 0.5f));  // This is the distance you want between the wall and the edge
+
+                        // First wall: Offset in the positive direction (normal direction)
+                        Vector2 offset1 = edge.Point1 + perpendicular * fixedDistance;
+                        Vector2 offset2 = edge.Point2 + perpendicular * fixedDistance;
+                        Triangle.Edge dupEdge = new Triangle.Edge(offset1, offset2);
+                        Debug.DrawLine(dupEdge.Point1, dupEdge.Point2);
+
+                        // Second wall: Offset in the negative direction (opposite normal direction)
+                        Vector2 offset1Opposite = edge.Point1 - perpendicular * fixedDistance;
+                        Vector2 offset2Opposite = edge.Point2 - perpendicular * fixedDistance;
+                        Triangle.Edge dupEdgeOpposite = new Triangle.Edge(offset1Opposite, offset2Opposite);
+                        Debug.DrawLine(dupEdgeOpposite.Point1, dupEdgeOpposite.Point2);
+
+                        // Check for intersection with the tile using the first offset edge (positive normal direction)
+                        if (IsTileIntersectingEdge(tileCenter, dupEdge, gridTile))
+                        {
+                            // Instantiate wall at the tile position (positive offset direction)
+                            GameObject wall = Instantiate(WallObject, tileCenter, Quaternion.identity, _parent.transform);
+                            wall.layer = LayerMask.NameToLayer("Hall");
+                            Walls.Add(wall);
+                            break; // Only place one wall
+                        }
+
+                        // Check for intersection with the tile using the second offset edge (negative normal direction)
+                        if (IsTileIntersectingEdge(tileCenter, dupEdgeOpposite, gridTile))
+                        {
+                            // Instantiate wall at the tile position (negative offset direction)
+                            GameObject wall = Instantiate(WallObject, tileCenter, Quaternion.identity, _parent.transform);
+                            wall.layer = LayerMask.NameToLayer("Hall");
+                            Walls.Add(wall);
+                            break; // Only place one wall
                         }
                     }
                 }
+                
             }
 
             yield return new WaitForSecondsRealtime(0.1f);
@@ -350,7 +427,7 @@ namespace DungeonGenerator
                 {
                     LayerMask mask = LayerMask.GetMask("Hall");
                     Vector2 size = new Vector2(room.size.x - gridTile.x - Single.Epsilon, room.size.y -gridTile.y - Single.Epsilon);
-                    RaycastHit2D[] hits = Physics2D.BoxCastAll(room.transform.position + room.bounds.extents, size , 0,Vector2.zero, 100,mask);
+                    RaycastHit2D[] hits = Physics2D.BoxCastAll(new Vector2(room.bounds.center.x+(gridTile.x / 2), room.bounds.center.y) , size, 0,Vector2.zero, 100,mask);
                     Debug.DrawLine(room.transform.position, room.transform.position + new Vector3(size.x, size.y, 0));
                     foreach (RaycastHit2D hit in hits)
                     {
@@ -380,13 +457,10 @@ namespace DungeonGenerator
             Vector2 bottomLeft = tileCenter + new Vector2(-tileSize.x / 2, -tileSize.y / 2);
             Vector2 bottomRight = tileCenter + new Vector2(tileSize.x / 2, -tileSize.y / 2);
 
-            // Create the four sides of the tile as edges
             Triangle.Edge topEdge = new Triangle.Edge(topLeft, topRight);
             Triangle.Edge rightEdge = new Triangle.Edge(topRight, bottomRight);
             Triangle.Edge bottomEdge = new Triangle.Edge(bottomRight, bottomLeft);
             Triangle.Edge leftEdge = new Triangle.Edge(bottomLeft, topLeft);
-
-            // Check if any of the tile edges intersects with the input edge
             return IsEdgeIntersectingEdge(edge, topEdge) || IsEdgeIntersectingEdge(edge, rightEdge) ||
                    IsEdgeIntersectingEdge(edge, bottomEdge) || IsEdgeIntersectingEdge(edge, leftEdge);
         }
